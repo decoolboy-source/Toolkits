@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MultihvacCalculator — Bộ công cụ tính toán HVAC</title>
+<meta name="description" content="Bộ công cụ tính toán nhanh cho kỹ thuật lạnh & HVAC: quy đổi đơn vị, tải lạnh, đường ống gió/nước, máy nén. Cài đặt và dùng offline như một ứng dụng độc lập.">
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MultiHVAC">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-sans:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Consolas,monospace;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px;
+  --header-h:60px; --sidebar-w:252px;
+}
+:root, :root[data-theme="dark"]{
+  --bg:#0a0f1a; --bg-elevated:#0f1626; --panel:#121b2e; --panel-2:#16213a; --panel-border:#243báB;
+  --panel-border:#22304a; --hairline:#1b273e;
+  --text-primary:#eaf0f9; --text-secondary:#9fb0c9; --text-muted:#64789b;
+  --accent:#22d3ee; --accent-ink:#04141a; --accent-soft:rgba(34,211,238,.12);
+  --accent-2:#34d399; --accent-2-soft:rgba(52,211,153,.12);
+  --danger:#f87171; --danger-soft:rgba(248,113,113,.12);
+  --warning:#fbbf24; --warning-soft:rgba(251,191,36,.12);
+  --input-bg:#0b1220; --shadow:0 12px 32px -14px rgba(0,0,0,.6);
+  --scrollbar:#28374f;
+}
+:root[data-theme="light"]{
+  --bg:#f3f5f9; --bg-elevated:#ffffff; --panel:#ffffff; --panel-2:#f8fafc; --panel-border:#e2e8f0; --hairline:#eef1f6;
+  --text-primary:#111827; --text-secondary:#4b5768; --text-muted:#8894a3;
+  --accent:#0891b2; --accent-ink:#ffffff; --accent-soft:rgba(8,145,178,.08);
+  --accent-2:#059669; --accent-2-soft:rgba(5,150,105,.08);
+  --danger:#dc2626; --danger-soft:rgba(220,38,38,.08);
+  --warning:#b45309; --warning-soft:rgba(180,83,9,.1);
+  --input-bg:#f8fafc; --shadow:0 12px 28px -16px rgba(15,23,42,.18);
+  --scrollbar:#cbd5e1;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]):not([data-theme="light"]){
+    --bg:#f3f5f9; --bg-elevated:#ffffff; --panel:#ffffff; --panel-2:#f8fafc; --panel-border:#e2e8f0; --hairline:#eef1f6;
+    --text-primary:#111827; --text-secondary:#4b5768; --text-muted:#8894a3;
+    --accent:#0891b2; --accent-ink:#ffffff; --accent-soft:rgba(8,145,178,.08);
+    --accent-2:#059669; --accent-2-soft:rgba(5,150,105,.08);
+    --danger:#dc2626; --danger-soft:rgba(220,38,38,.08);
+    --warning:#b45309; --warning-soft:rgba(180,83,9,.1);
+    --input-bg:#f8fafc; --shadow:0 12px 28px -16px rgba(15,23,42,.18);
+    --scrollbar:#cbd5e1;
+  }
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow:hidden}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:8px}
+a{color:inherit}
+button{font-family:inherit}
+.app-shell{display:flex;flex-direction:column;height:100vh}
+
+/* ---------- Header ---------- */
+.topbar{height:var(--header-h);flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;border-bottom:1px solid var(--hairline);background:var(--bg-elevated);gap:12px;z-index:30}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{width:34px;height:34px;border-radius:10px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px -4px var(--accent-soft)}
+.brand-mark svg{width:19px;height:19px;stroke:var(--accent-ink);fill:none}
+.brand-text{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand-text .name{font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand-text .tag{font-size:11px;color:var(--text-muted);white-space:nowrap}
+.hamburger{display:none;border:1px solid var(--panel-border);background:var(--panel);border-radius:10px;width:38px;height:38px;
+  align-items:center;justify-content:center;cursor:pointer;color:var(--text-primary)}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{border:1px solid var(--panel-border);background:var(--panel);border-radius:10px;width:38px;height:38px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);transition:.15s}
+.icon-btn:hover{color:var(--text-primary);border-color:var(--accent)}
+.icon-btn svg{width:17px;height:17px;stroke:currentColor;fill:none}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;border:1px solid var(--panel-border);
+  background:var(--panel);color:var(--text-primary);font-size:13px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:var(--accent-ink)}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-ghost{background:transparent}
+.btn-sm{padding:6px 10px;font-size:12px;border-radius:8px}
+
+/* ---------- Body layout ---------- */
+.body-wrap{flex:1;display:flex;min-height:0}
+.sidebar{width:var(--sidebar-w);flex:0 0 auto;background:var(--bg-elevated);border-right:1px solid var(--hairline);
+  overflow-y:auto;padding:16px 12px 20px}
+.nav-group-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);
+  font-weight:700;padding:10px 10px 8px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:10px;cursor:pointer;
+  color:var(--text-secondary);font-size:13.5px;font-weight:500;margin-bottom:2px;border:1px solid transparent;transition:.12s}
+.nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;flex:0 0 auto}
+.nav-item:hover{background:var(--panel-2);color:var(--text-primary)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);font-weight:600}
+.nav-item .num{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
+  background:var(--panel-2);border-radius:5px;padding:1px 6px}
+.nav-item.active .num{color:var(--accent)}
+
+.content{flex:1;overflow-y:auto;padding:26px 28px 60px}
+.container{max-width:1080px;margin:0 auto}
+
+.page-head{margin-bottom:20px}
+.page-head h1{font-size:21px;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.page-head h1 svg{width:22px;height:22px;stroke:var(--accent);fill:none}
+.page-head p{margin:0;color:var(--text-secondary);font-size:13.5px;line-height:1.55;max-width:70ch}
+
+/* ---------- Cards / forms ---------- */
+.card{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius-lg);
+  padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px}
+.card-head h2{font-size:14px;margin:0;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-head h2 svg{width:16px;height:16px;stroke:var(--accent-2);fill:none}
+.card-head .hint{font-size:12px;color:var(--text-muted)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:720px){.grid-3,.grid-4{grid-template-columns:repeat(2,1fr)}}
+
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:12.5px;color:var(--text-secondary);font-weight:600;display:flex;align-items:center;gap:6px}
+.field label .opt{font-weight:400;color:var(--text-muted);font-size:11px}
+.field input[type=number],.field input[type=text],.field select{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--panel-border);
+  background:var(--input-bg);color:var(--text-primary);font-family:var(--font-mono);font-size:13.5px;transition:.12s}
+.field select{font-family:var(--font-sans);cursor:pointer}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field .suffix-wrap{position:relative}
+.field .suffix-wrap input{padding-right:56px}
+.field .suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--text-muted);
+  font-family:var(--font-mono);pointer-events:none}
+.field .desc{font-size:11px;color:var(--text-muted);line-height:1.4}
+.seg{display:flex;border:1px solid var(--panel-border);border-radius:10px;overflow:hidden}
+.seg button{flex:1;padding:9px 8px;background:var(--input-bg);border:none;color:var(--text-secondary);
+  font-size:12.5px;font-weight:600;cursor:pointer;border-right:1px solid var(--panel-border)}
+.seg button:last-child{border-right:none}
+.seg button.active{background:var(--accent);color:var(--accent-ink)}
+
+/* ---------- Results ---------- */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{padding:16px;border-radius:var(--radius-md);background:var(--panel-2);border:1px solid var(--panel-border);
+  display:flex;flex-direction:column;gap:4px}
+.stat.primary{background:linear-gradient(155deg,var(--accent-soft),var(--accent-2-soft));border-color:var(--accent)}
+.stat .label{font-size:11.5px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat .value{font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--text-primary);line-height:1.2;
+  display:flex;align-items:baseline;gap:6px}
+.stat.primary .value{color:var(--accent)}
+.stat .value .unit{font-size:13px;font-weight:600;color:var(--text-muted)}
+.stat .note{font-size:11px;color:var(--text-muted)}
+
+.result-actions{display:flex;justify-content:flex-end;margin-top:4px}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700}
+.badge-ok{background:var(--accent-2-soft);color:var(--accent-2)}
+.badge-warn{background:var(--warning-soft);color:var(--warning)}
+.badge-danger{background:var(--danger-soft);color:var(--danger)}
+
+.note-box{display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius-md);background:var(--panel-2);
+  border:1px solid var(--panel-border);font-size:12.5px;color:var(--text-secondary);line-height:1.55}
+.note-box svg{width:16px;height:16px;stroke:var(--text-muted);fill:none;flex:0 0 auto;margin-top:1px}
+.note-box.warn{background:var(--warning-soft);border-color:transparent}
+.note-box.warn svg{stroke:var(--warning)}
+
+table.ref-table{width:100%;border-collapse:collapse;font-size:12.5px}
+table.ref-table th{text-align:left;color:var(--text-muted);font-weight:600;font-size:11px;text-transform:uppercase;
+  letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--panel-border)}
+table.ref-table td{padding:8px 10px;border-bottom:1px solid var(--hairline);font-family:var(--font-mono);color:var(--text-secondary)}
+table.ref-table tr:last-child td{border-bottom:none}
+table.ref-table td.hl{color:var(--accent);font-weight:700}
+
+details.collapse{border:1px solid var(--panel-border);border-radius:var(--radius-md);overflow:hidden;background:var(--panel-2)}
+details.collapse summary{padding:11px 14px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text-secondary);
+  display:flex;align-items:center;gap:8px;list-style:none}
+details.collapse summary::-webkit-details-marker{display:none}
+details.collapse summary svg{width:14px;height:14px;stroke:currentColor;fill:none;transition:.15s}
+details.collapse[open] summary svg{transform:rotate(90deg)}
+details.collapse .collapse-body{padding:0 14px 14px}
+
+/* ---------- Footer / status ---------- */
+.statusbar{flex:0 0 auto;height:30px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;border-top:1px solid var(--hairline);background:var(--bg-elevated);font-size:11px;color:var(--text-muted)}
+.statusbar .dot{width:6px;height:6px;border-radius:99px;background:var(--accent-2);display:inline-block;margin-right:6px;
+  box-shadow:0 0 0 3px var(--accent-2-soft)}
+
+/* ---------- Toasts ---------- */
+.toast-wrap{position:fixed;bottom:44px;right:16px;z-index:60;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.toast{background:var(--panel);border:1px solid var(--panel-border);color:var(--text-primary);padding:10px 14px;
+  border-radius:10px;font-size:12.5px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;
+  animation:toast-in .2s ease-out}
+.toast svg{width:15px;height:15px;stroke:var(--accent-2);fill:none}
+@keyframes toast-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- Mobile drawer ---------- */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:none}
+.drawer-overlay.open{display:block}
+.drawer{position:absolute;left:0;top:0;bottom:0;width:270px;background:var(--bg-elevated);border-right:1px solid var(--hairline);
+  padding:16px 12px;overflow-y:auto}
+
+@media (max-width:860px){
+  .sidebar{display:none}
+  .hamburger{display:flex}
+  .content{padding:18px 14px 50px}
+  .grid-3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:520px){
+  .grid-3,.grid-4{grid-template-columns:1fr 1fr}
+  .brand-text .tag{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <button class="hamburger" id="btnHamburger" aria-label="Mở menu">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+      </button>
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="name">MultihvacCalculator</span>
+          <span class="tag">Bộ công cụ tính toán HVAC</span>
+        </div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-sm" id="btnInstall" style="display:none">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        Cài đặt ứng dụng
+      </button>
+      <button class="icon-btn" id="btnTheme" aria-label="Đổi giao diện sáng/tối">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="themeIcon"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="body-wrap">
+    <aside class="sidebar" id="sidebarDesktop"></aside>
+
+    <div class="drawer-overlay" id="drawerOverlay">
+      <nav class="drawer" id="sidebarMobile"></nav>
+    </div>
+
+    <main class="content">
+      <div class="container" id="mainRoot"></div>
+    </main>
+  </div>
+
+  <div class="statusbar">
+    <span><span class="dot"></span>Sẵn sàng · hoạt động ngoại tuyến</span>
+    <span id="statusRight" style="font-family:var(--font-mono)"></span>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   ICONS — minimal inline SVG path sets, referenced by name
+   ============================================================ */
+const ICONS = {
+  converter:'<path d="M7 8h11l-3-3M17 16H6l3 3"/>',
+  load:'<path d="M3 20V10l9-6 9 6v10"/><path d="M9 20v-6h6v6"/>',
+  duct:'<rect x="3" y="9" width="18" height="6" rx="1"/><path d="M3 12h-1M22 12h-1"/>',
+  pipe:'<path d="M4 12h6a4 4 0 0 0 4-4V4"/><path d="M20 12h-6a4 4 0 0 0-4 4v4"/>',
+  compressor:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  chevron:'<path d="M9 6l6 6-6 6"/>'
+};
+function ic(name,cls){ return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">'+ICONS[name]+'</svg>'; }
+
+/* ============================================================
+   PHYSICAL CONSTANTS & UNIT CONVERSION TABLES
+   ============================================================ */
+const W_PER_BTUH = 0.29307107;
+const W_PER_KCALH = 1.163;
+const W_PER_RT = 12000 * W_PER_BTUH;      // 1 ton lạnh = 12,000 BTU/h = 3516.85 W
+const W_PER_HP_MARKET = 9000 * W_PER_BTUH; // quy ước máy lạnh dân dụng VN: 1HP ≈ 9,000 BTU/h
+
+const CAPACITY_UNITS = {
+  W:    {label:'W',              toBase:v=>v,               fromBase:v=>v},
+  kW:   {label:'kW',             toBase:v=>v*1000,          fromBase:v=>v/1000},
+  BTUh: {label:'BTU/h',          toBase:v=>v*W_PER_BTUH,    fromBase:v=>v/W_PER_BTUH},
+  kcalh:{label:'kcal/h',         toBase:v=>v*W_PER_KCALH,   fromBase:v=>v/W_PER_KCALH},
+  RT:   {label:'Ton lạnh (RT)',  toBase:v=>v*W_PER_RT,      fromBase:v=>v/W_PER_RT},
+  HP:   {label:'HP máy lạnh*',   toBase:v=>v*W_PER_HP_MARKET, fromBase:v=>v/W_PER_HP_MARKET}
+};
+const PRESSURE_UNITS = {
+  Pa:   {label:'Pa',        toBase:v=>v,          fromBase:v=>v},
+  kPa:  {label:'kPa',       toBase:v=>v*1e3,       fromBase:v=>v/1e3},
+  bar:  {label:'bar',       toBase:v=>v*1e5,       fromBase:v=>v/1e5},
+  psi:  {label:'psi',       toBase:v=>v*6894.757,  fromBase:v=>v/6894.757},
+  kgcm2:{label:'kg/cm² (at)',toBase:v=>v*98066.5,   fromBase:v=>v/98066.5},
+  mmHg: {label:'mmHg',      toBase:v=>v*133.322,   fromBase:v=>v/133.322},
+  atm:  {label:'atm',       toBase:v=>v*101325,    fromBase:v=>v/101325},
+  mmH2O:{label:'mmH₂O',     toBase:v=>v*9.80665,   fromBase:v=>v/9.80665}
+};
+const FLOW_UNITS = {
+  m3h: {label:'m³/h',  toBase:v=>v/3600,          fromBase:v=>v*3600},
+  m3s: {label:'m³/s',  toBase:v=>v,               fromBase:v=>v},
+  Ls:  {label:'l/s',   toBase:v=>v*0.001,         fromBase:v=>v/0.001},
+  Lmin:{label:'l/phút',toBase:v=>v*0.001/60,      fromBase:v=>v/(0.001/60)},
+  cfm: {label:'CFM',   toBase:v=>v*0.0004719474,  fromBase:v=>v/0.0004719474},
+  gpm: {label:'GPM (US)',toBase:v=>v*0.0000630902,fromBase:v=>v/0.0000630902}
+};
+const LENGTH_UNITS = {
+  mm:{label:'mm',toBase:v=>v*0.001,fromBase:v=>v/0.001},
+  cm:{label:'cm',toBase:v=>v*0.01, fromBase:v=>v/0.01},
+  m: {label:'m', toBase:v=>v,      fromBase:v=>v},
+  inch:{label:'inch',toBase:v=>v*0.0254,fromBase:v=>v/0.0254},
+  ft:{label:'ft',toBase:v=>v*0.3048,fromBase:v=>v/0.3048}
+};
+function cToBase(c){return c;} // temperature handled separately (affine)
+function tempConvert(value, from, to){
+  let c;
+  if(from==='C') c=value;
+  else if(from==='F') c=(value-32)*5/9;
+  else c=value-273.15; // K
+  if(to==='C') return c;
+  if(to==='F') return c*9/5+32;
+  return c+273.15;
+}
+
+function convert(table, value, from, to){
+  if(!isFinite(value)) return NaN;
+  const base = table[from].toBase(value);
+  return table[to].fromBase(base);
+}
+
+/* ============================================================
+   FLUID FRICTION (Darcy–Weisbach + Swamee–Jain)
+   ============================================================ */
+function frictionFactor(Re, eps, D){
+  if(Re<=0) return 0;
+  if(Re<2300) return 64/Re;
+  const rel = eps/(3.7*D);
+  const denom = Math.log10(rel + 5.74/Math.pow(Re,0.9));
+  return 0.25/(denom*denom);
+}
+// Returns {v, Re, f, dpPerM} — v: m/s, D_h: m (hydraulic diameter), rho: kg/m3, mu: Pa.s, eps: m
+function frictionCalc(v, D_h, rho, mu, eps){
+  const Re = rho*v*D_h/mu;
+  const f = frictionFactor(Re, eps, D_h);
+  const dpPerM = f*(rho*v*v)/(2*D_h);
+  return {Re, f, dpPerM};
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function fmt(n, digits){
+  if(n===null||n===undefined||!isFinite(n)) return '—';
+  if(digits===undefined) digits = Math.abs(n)>=1000?0:(Math.abs(n)>=100?1:2);
+  return n.toLocaleString('vi-VN',{minimumFractionDigits:0,maximumFractionDigits:digits});
+}
+function $(sel,ctx){return (ctx||document).querySelector(sel);}
+function $all(sel,ctx){return Array.from((ctx||document).querySelectorAll(sel));}
+function num(v,fallback){ const n=parseFloat(v); return isFinite(n)?n:(fallback!==undefined?fallback:0); }
+
+function toast(msg, iconName){
+  const wrap = $('#toastWrap');
+  const t = document.createElement('div');
+  t.className='toast';
+  t.innerHTML = ic(iconName||'check')+'<span>'+msg+'</span>';
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.transition='.2s'; t.style.opacity='0'; setTimeout(()=>t.remove(),200); }, 2200);
+}
+function copyValue(text, label){
+  navigator.clipboard && navigator.clipboard.writeText(text).then(()=>{
+    toast('Đã sao chép'+(label?(' — '+label):''),'copy');
+  }).catch(()=>toast('Không thể sao chép','info'));
+}
+
+/* ============================================================
+   STATE / STORAGE
+   ============================================================ */
+const LS_KEY = 'mhc_inputs_v1';
+function loadStore(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||{}; }catch(e){ return {}; } }
+function saveStore(mod, data){
+  const s = loadStore(); s[mod] = data; localStorage.setItem(LS_KEY, JSON.stringify(s));
+}
+function getStore(mod){ return loadStore()[mod] || {}; }
+
+/* ============================================================
+   ROUTES
+   ============================================================ */
+const ROUTES = [
+  {id:'converter',  label:'Quy đổi đơn vị',        icon:'converter',  n:'01'},
+  {id:'coolingload',label:'Tải lạnh nhanh',        icon:'load',       n:'02'},
+  {id:'duct',       label:'Đường ống gió',         icon:'duct',       n:'03'},
+  {id:'pipe',       label:'Đường ống nước / gas',  icon:'pipe',       n:'04'},
+  {id:'compressor', label:'Máy nén & COP',         icon:'compressor', n:'05'}
+];
+
+const App = { route: location.hash.replace('#/','')||'converter' };
+
+function renderNav(){
+  const items = ROUTES.map(r=>{
+    const active = App.route===r.id ? ' active' : '';
+    return '<div class="nav-item'+active+'" data-route="'+r.id+'">'+ic(r.icon)+'<span>'+r.label+'</span><span class="num">'+r.n+'</span></div>';
+  }).join('');
+  const title = '<div class="nav-group-title">Công cụ</div>';
+  $('#sidebarDesktop').innerHTML = title+items;
+  $('#sidebarMobile').innerHTML = title+items;
+  $all('.nav-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      location.hash = '#/'+el.dataset.route;
+      closeDrawer();
+    });
+  });
+}
+
+function closeDrawer(){ $('#drawerOverlay').classList.remove('open'); }
+$('#btnHamburger').addEventListener('click', ()=> $('#drawerOverlay').classList.add('open'));
+$('#drawerOverlay').addEventListener('click', (e)=>{ if(e.target.id==='drawerOverlay') closeDrawer(); });
+
+window.addEventListener('hashchange', ()=>{
+  App.route = location.hash.replace('#/','')||'converter';
+  renderNav();
+  renderRoute();
+  $('.content').scrollTop=0;
+});
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme(mode){
+  if(mode==='auto'){ document.documentElement.removeAttribute('data-theme'); }
+  else{ document.documentElement.setAttribute('data-theme', mode); }
+  const isDark = mode==='dark' || (mode==='auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  $('#themeIcon').innerHTML = isDark
+    ? '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/>'
+    : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+}
+let themeMode = localStorage.getItem('mhc_theme') || 'dark';
+applyTheme(themeMode);
+$('#btnTheme').addEventListener('click', ()=>{
+  themeMode = themeMode==='dark' ? 'light' : 'dark';
+  localStorage.setItem('mhc_theme', themeMode);
+  applyTheme(themeMode);
+});
+
+/* ============================================================
+   PWA INSTALL
+   ============================================================ */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  $('#btnInstall').style.display='inline-flex';
+});
+$('#btnInstall').addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  $('#btnInstall').style.display='none';
+});
+window.addEventListener('appinstalled', ()=>{ $('#btnInstall').style.display='none'; toast('Đã cài đặt ứng dụng','check'); });
+if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
+  $('#btnInstall').style.display='none';
+}
+
+/* ============================================================
+   PAGE SHELL helper
+   ============================================================ */
+function pageHead(icon, title, desc){
+  return '<div class="page-head"><h1>'+ic(icon)+title+'</h1><p>'+desc+'</p></div>';
+}
+function field(opts){
+  // opts: {id,label,value,step,min,max,suffix,desc,opt}
+  const suf = opts.suffix ? '<span class="suffix">'+opts.suffix+'</span>' : '';
+  const wrapCls = opts.suffix ? 'suffix-wrap' : '';
+  return '<div class="field">'+
+    '<label>'+opts.label+(opts.opt?'<span class="opt">'+opts.opt+'</span>':'')+'</label>'+
+    '<div class="'+wrapCls+'"><input type="number" id="'+opts.id+'" value="'+opts.value+'" '+
+    (opts.step?('step="'+opts.step+'" '):'')+(opts.min!==undefined?('min="'+opts.min+'" '):'')+'>'+suf+'</div>'+
+    (opts.desc?'<span class="desc">'+opts.desc+'</span>':'')+
+    '</div>';
+}
+function selectField(opts){
+  // opts:{id,label,options:[{v,t}],value}
+  const opts2 = opts.options.map(o=>'<option value="'+o.v+'"'+(o.v==opts.value?' selected':'')+'>'+o.t+'</option>').join('');
+  return '<div class="field"><label>'+opts.label+'</label><select id="'+opts.id+'">'+opts2+'</select></div>';
+}
+function statTile(cls, label, value, unit, note){
+  return '<div class="stat '+(cls||'')+'"><span class="label">'+label+'</span>'+
+    '<span class="value">'+value+(unit?'<span class="unit">'+unit+'</span>':'')+'</span>'+
+    (note?'<span class="note">'+note+'</span>':'')+'</div>';
+}
+
+/* ============================================================
+   MODULE 1 — CONVERTER
+   ============================================================ */
+const CONV_TABS = [
+  {id:'capacity', label:'Công suất lạnh', table:CAPACITY_UNITS, def:['kW','BTUh']},
+  {id:'pressure', label:'Áp suất', table:PRESSURE_UNITS, def:['bar','psi']},
+  {id:'flow', label:'Lưu lượng', table:FLOW_UNITS, def:['m3h','Ls']},
+  {id:'length', label:'Chiều dài', table:LENGTH_UNITS, def:['mm','inch']},
+  {id:'temp', label:'Nhiệt độ', table:null, def:['C','F']}
+];
+let convActiveTab = getStore('converter').tab || 'capacity';
+
+function renderConverter(){
+  const store = getStore('converter');
+  const tabsHtml = CONV_TABS.map(t=>'<button class="'+(t.id===convActiveTab?'active':'')+'" data-tab="'+t.id+'">'+t.label+'</button>').join('');
+
+  let body = '';
+  if(convActiveTab==='temp'){
+    const v = store.tempC !== undefined ? store.tempC : 25;
+    body = '<div class="grid-3">'+
+      '<div class="field"><label>Celsius (°C)</label><input type="number" id="t_C" value="'+v+'"></div>'+
+      '<div class="field"><label>Fahrenheit (°F)</label><input type="number" id="t_F" value="'+tempConvert(v,'C','F').toFixed(2)+'"></div>'+
+      '<div class="field"><label>Kelvin (K)</label><input type="number" id="t_K" value="'+tempConvert(v,'C','K').toFixed(2)+'"></div>'+
+      '</div>';
+  } else {
+    const tabDef = CONV_TABS.find(t=>t.id===convActiveTab);
+    const table = tabDef.table;
+    const keys = Object.keys(table);
+    const anchor = (store.anchor && table[store.anchor]) ? store.anchor : tabDef.def[0];
+    const anchorVal = store.value !== undefined ? store.value : 1;
+    body = '<div class="grid">'+ keys.map(k=>{
+      const val = k===anchor ? anchorVal : convert(table, anchorVal, anchor, k);
+      return '<div class="field"><label>'+table[k].label+'</label>'+
+        '<input type="number" id="u_'+k+'" data-key="'+k+'" value="'+(k===anchor?fmt(val,6).replace(/\./g,'').replace(/,/g,'.'):Number(val.toPrecision(6)))+'"></div>';
+    }).join('') + '</div>';
+  }
+
+  const hpNote = convActiveTab==='capacity' ? (
+    '<details class="collapse" style="margin-top:14px"><summary>'+ic('chevron')+'Bảng quy ước HP máy lạnh dân dụng (tham khảo)</summary>'+
+    '<div class="collapse-body"><table class="ref-table"><thead><tr><th>Công suất</th><th>BTU/h</th><th>kW (xấp xỉ)</th></tr></thead><tbody>'+
+    [[1,9000],[1.5,12000],[2,18000],[2.5,21000],[3,24000]].map(r=>
+      '<tr><td class="hl">'+r[0]+' HP</td><td>'+fmt(r[1])+'</td><td>'+fmt(r[1]*W_PER_BTUH/1000,2)+'</td></tr>').join('')+
+    '</tbody></table><p style="font-size:11.5px;color:var(--text-muted);margin:10px 0 0">*"HP máy lạnh" là quy ước công suất lạnh phổ biến trên thị trường Việt Nam (≈9.000 BTU/h mỗi HP), không phải đơn vị công suất cơ trục động cơ. Giá trị thực tế có thể lệch theo từng hãng sản xuất.</p></div></details>'
+  ) : '';
+
+  $('#mainRoot').innerHTML =
+    pageHead('converter','Quy đổi đơn vị','Chuyển đổi nhanh các đơn vị thường dùng trong kỹ thuật lạnh & điều hòa không khí: công suất lạnh, áp suất, lưu lượng, chiều dài và nhiệt độ.') +
+    '<div class="card">'+
+      '<div class="seg" id="convTabs">'+tabsHtml+'</div>'+
+      '<div style="height:16px"></div>'+
+      '<div id="convBody">'+body+'</div>'+
+      hpNote+
+    '</div>';
+
+  $('#convTabs').addEventListener('click', (e)=>{
+    const b = e.target.closest('button'); if(!b) return;
+    convActiveTab = b.dataset.tab;
+    saveStore('converter', Object.assign(getStore('converter'), {tab:convActiveTab}));
+    renderConverter();
+  });
+
+  if(convActiveTab==='temp'){
+    ['t_C','t_F','t_K'].forEach(id=>{
+      $('#'+id).addEventListener('input', (e)=>{
+        const unit = id.split('_')[1];
+        const v = num(e.target.value);
+        const c = unit==='C'?v: unit==='F'?tempConvert(v,'F','C'):tempConvert(v,'K','C');
+        $('#t_C').value = unit==='C'?v:c.toFixed(2);
+        $('#t_F').value = unit==='F'?v:tempConvert(c,'C','F').toFixed(2);
+        $('#t_K').value = unit==='K'?v:tempConvert(c,'C','K').toFixed(2);
+        saveStore('converter', Object.assign(getStore('converter'), {tempC:c, tab:'temp'}));
+      });
+    });
+  } else {
+    const tabDef = CONV_TABS.find(t=>t.id===convActiveTab);
+    const table = tabDef.table;
+    $all('#convBody input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const key = inp.dataset.key;
+        const val = num(inp.value);
+        Object.keys(table).forEach(k=>{
+          if(k===key) return;
+          $('#u_'+k).value = Number(convert(table, val, key, k).toPrecision(6));
+        });
+        saveStore('converter', Object.assign(getStore('converter'), {tab:convActiveTab, anchor:key, value:val}));
+      });
+    });
+  }
+}
+
+/* ============================================================
+   MODULE 2 — QUICK COOLING LOAD
+   ============================================================ */
+const SPACE_TYPES = [
+  {v:'living', t:'Phòng ở / khách sạn', w:130},
+  {v:'office', t:'Văn phòng', w:150},
+  {v:'meeting', t:'Phòng họp / nhà hàng (đông người)', w:200},
+  {v:'retail', t:'Cửa hàng / showroom', w:180},
+  {v:'custom', t:'Tuỳ chỉnh', w:null}
+];
+const PEOPLE_ACT = [
+  {v:100,t:'Nghỉ ngơi nhẹ (~100 W/người)'},
+  {v:130,t:'Hoạt động văn phòng (~130 W/người)'},
+  {v:200,t:'Hoạt động thể chất (~200 W/người)'}
+];
+const GLASS_DIR = [
+  {v:0,   t:'Không có kính chịu nắng trực tiếp'},
+  {v:150, t:'Hướng Bắc / Nam (~150 W/m²)'},
+  {v:300, t:'Hướng Đông / Tây (~300 W/m²)'}
+];
+const HP_TABLE = [
+  {hp:1,btu:9000},{hp:1.5,btu:12000},{hp:2,btu:18000},{hp:2.5,btu:21000},
+  {hp:3,btu:24000},{hp:4,btu:36000},{hp:5,btu:48000},{hp:6,btu:60000},{hp:10,btu:96000}
+];
+
+function renderCoolingLoad(){
+  const s = Object.assign({
+    area:30, spaceType:'office', customW:150, peopleCount:4, peopleAct:130,
+    equipW:1500, simFactor:0.8, glassArea:0, glassDir:0, margin:10
+  }, getStore('coolingload'));
+
+  $('#mainRoot').innerHTML =
+    pageHead('load','Tải lạnh nhanh','Ước tính sơ bộ tải lạnh cần thiết cho một không gian dựa trên diện tích, số người, thiết bị và bức xạ mặt trời. Đây là công cụ ước tính nhanh — không thay thế tính toán tải lạnh chi tiết theo tiêu chuẩn (ASHRAE/TCVN) cho thiết kế chính thức.') +
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('load')+'Thông số không gian</h2></div>'+
+      '<div class="grid">'+
+        field({id:'cl_area',label:'Diện tích phòng',value:s.area,suffix:'m²',min:0})+
+        selectField({id:'cl_spaceType',label:'Loại không gian',value:s.spaceType,options:SPACE_TYPES.map(x=>({v:x.v,t:x.t}))})+
+        field({id:'cl_customW',label:'Hệ số nhiệt tuỳ chỉnh',value:s.customW,suffix:'W/m²',opt:'khi chọn Tuỳ chỉnh'})+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('load')+'Người & thiết bị</h2></div>'+
+      '<div class="grid">'+
+        field({id:'cl_peopleCount',label:'Số người',value:s.peopleCount,min:0})+
+        selectField({id:'cl_peopleAct',label:'Mức hoạt động',value:s.peopleAct,options:PEOPLE_ACT.map(x=>({v:x.v,t:x.t}))})+
+        field({id:'cl_equipW',label:'Tổng công suất thiết bị/đèn',value:s.equipW,suffix:'W'})+
+        field({id:'cl_simFactor',label:'Hệ số sử dụng đồng thời',value:s.simFactor,step:'0.05',min:0,max:1})+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('load')+'Bức xạ mặt trời qua kính (nếu có)</h2></div>'+
+      '<div class="grid">'+
+        field({id:'cl_glassArea',label:'Diện tích kính',value:s.glassArea,suffix:'m²',min:0})+
+        selectField({id:'cl_glassDir',label:'Hướng kính',value:s.glassDir,options:GLASS_DIR.map(x=>({v:x.v,t:x.t}))})+
+        field({id:'cl_margin',label:'Hệ số dự phòng',value:s.margin,suffix:'%',min:0})+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('load')+'Kết quả ước tính</h2><button class="btn btn-sm" id="cl_copy">'+ic('copy')+'Sao chép</button></div>'+
+      '<div class="stat-row" id="cl_stats"></div>'+
+      '<div style="height:12px"></div>'+
+      '<div class="note-box"><span></span>' + ic('info') + '<span>Công thức sử dụng hệ số kinh nghiệm (W/m², W/người) phổ biến trong ước tính nhanh tại Việt Nam. Với công trình thực tế, nên tính toán chi tiết theo tiêu chuẩn ASHRAE hoặc TCVN 5687.</span></div>'+
+    '</div>';
+
+  function calc(){
+    const area = num($('#cl_area').value);
+    const spaceType = $('#cl_spaceType').value;
+    const customW = num($('#cl_customW').value);
+    const peopleCount = num($('#cl_peopleCount').value);
+    const peopleAct = num($('#cl_peopleAct').value);
+    const equipW = num($('#cl_equipW').value);
+    const simFactor = num($('#cl_simFactor').value);
+    const glassArea = num($('#cl_glassArea').value);
+    const glassDir = num($('#cl_glassDir').value);
+    const margin = num($('#cl_margin').value);
+
+    const spaceDef = SPACE_TYPES.find(x=>x.v===spaceType);
+    const wPerM2 = spaceType==='custom' ? customW : spaceDef.w;
+
+    const qRoom = area*wPerM2;
+    const qPeople = peopleCount*peopleAct;
+    const qEquip = equipW*simFactor;
+    const qGlass = glassArea*glassDir;
+    const qSub = qRoom+qPeople+qEquip+qGlass;
+    const qTotal = qSub*(1+margin/100);
+
+    const kW = qTotal/1000;
+    const btuh = qTotal/W_PER_BTUH;
+    const rt = qTotal/W_PER_RT;
+    let suggestion = HP_TABLE.find(h=>h.btu>=btuh);
+    if(!suggestion) suggestion = HP_TABLE[HP_TABLE.length-1];
+
+    $('#cl_stats').innerHTML =
+      statTile('primary','Tải lạnh tổng','',
+        '', '') || '';
+    $('#cl_stats').innerHTML =
+      statTile('primary','Tải lạnh tổng', fmt(qTotal), 'W', fmt(kW,2)+' kW · '+fmt(btuh)+' BTU/h') +
+      statTile('','Ton lạnh (RT)', fmt(rt,2), 'RT') +
+      statTile('','Chi tiết thành phần', fmt(qRoom)+' + '+fmt(qPeople)+' + '+fmt(qEquip)+(qGlass?(' + '+fmt(qGlass)):''), 'W', 'phòng + người + thiết bị'+(qGlass?' + kính':'')) +
+      statTile('','Gợi ý chọn máy', suggestion.hp+' HP', '', '≥ '+fmt(suggestion.btu)+' BTU/h — tham khảo, chọn dư công suất khi cần');
+
+    saveStore('coolingload', {area,spaceType,customW,peopleCount,peopleAct,equipW,simFactor,glassArea,glassDir,margin});
+    App._clLastResult = {qTotal,kW,btuh,rt,suggestion};
+  }
+  App.currentCalc = calc;
+  calc();
+  $('#cl_copy').addEventListener('click', ()=>{
+    const r = App._clLastResult; if(!r) return;
+    copyValue('Tải lạnh: '+fmt(r.qTotal)+' W ('+fmt(r.kW,2)+' kW, '+fmt(r.btuh)+' BTU/h, '+fmt(r.rt,2)+' RT) — Gợi ý: '+r.suggestion.hp+' HP','Tải lạnh');
+  });
+}
+
+/* ============================================================
+   MODULE 3 — DUCT SIZING
+   ============================================================ */
+const DUCT_SECTIONS = [
+  {v:'main', t:'Ống trục chính', vmin:6, vmax:9},
+  {v:'branch', t:'Ống nhánh chính', vmin:4, vmax:6.5},
+  {v:'sub', t:'Ống nhánh phụ', vmin:3, vmax:5},
+  {v:'outlet', t:'Miệng gió / đầu cuối', vmin:1.5, vmax:2.5},
+  {v:'custom', t:'Tuỳ chỉnh', vmin:null, vmax:null}
+];
+const DUCT_MATERIALS = [
+  {v:'galv', t:'Tôn tráng kẽm', eps:0.00009},
+  {v:'ss', t:'Inox', eps:0.00003},
+  {v:'flex', t:'Ống mềm/vải', eps:0.0009}
+];
+const RHO_AIR=1.204, MU_AIR=1.825e-5;
+
+function renderDuct(){
+  const s = Object.assign({
+    flow:2000, flowUnit:'m3h', section:'branch', velocity:5, shape:'round',
+    rectH:250, material:'galv'
+  }, getStore('duct'));
+
+  $('#mainRoot').innerHTML =
+    pageHead('duct','Đường ống gió','Tính kích thước ống gió (tròn/chữ nhật) từ lưu lượng và vận tốc thiết kế, đồng thời ước tính tổn thất áp suất ma sát theo phương trình Darcy–Weisbach.') +
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('duct')+'Lưu lượng & vận tốc thiết kế</h2></div>'+
+      '<div class="grid">'+
+        '<div class="field"><label>Lưu lượng gió</label><div style="display:flex;gap:8px">'+
+          '<input type="number" id="dc_flow" value="'+s.flow+'" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-primary);font-family:var(--font-mono)">'+
+          '<select id="dc_flowUnit" style="width:92px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-primary)">'+
+            ['m3h','Ls','cfm'].map(k=>'<option value="'+k+'"'+(k===s.flowUnit?' selected':'')+'>'+FLOW_UNITS[k].label+'</option>').join('')+
+          '</select></div></div>'+
+        selectField({id:'dc_section',label:'Loại đoạn ống',value:s.section,options:DUCT_SECTIONS.map(x=>({v:x.v,t:x.t}))})+
+        field({id:'dc_velocity',label:'Vận tốc thiết kế',value:s.velocity,suffix:'m/s',step:'0.1'})+
+        selectField({id:'dc_material',label:'Vật liệu ống',value:s.material,options:DUCT_MATERIALS.map(x=>({v:x.v,t:x.t}))})+
+      '</div>'+
+      '<div style="height:6px"></div>'+
+      '<div class="field"><label>Hình dạng ống</label><div class="seg" id="dc_shape" style="max-width:280px">'+
+        '<button data-v="round" class="'+(s.shape==='round'?'active':'')+'">Tròn</button>'+
+        '<button data-v="rect" class="'+(s.shape==='rect'?'active':'')+'">Chữ nhật</button>'+
+      '</div></div>'+
+      '<div id="dc_rectRow" style="display:'+(s.shape==='rect'?'block':'none')+';margin-top:12px">'+
+        field({id:'dc_rectH',label:'Chiều cao ống (cạnh đã chọn trước)',value:s.rectH,suffix:'mm'})+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('duct')+'Kết quả</h2><button class="btn btn-sm" id="dc_copy">'+ic('copy')+'Sao chép</button></div>'+
+      '<div class="stat-row" id="dc_stats"></div>'+
+      '<div style="height:10px"></div>'+
+      '<div id="dc_warn"></div>'+
+    '</div>';
+
+  function setShape(v){
+    s.shape=v;
+    $all('#dc_shape button').forEach(b=>b.classList.toggle('active', b.dataset.v===v));
+    $('#dc_rectRow').style.display = v==='rect'?'block':'none';
+    calc();
+  }
+  $('#dc_shape').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) setShape(b.dataset.v); });
+
+  $('#dc_section').addEventListener('change', ()=>{
+    const def = DUCT_SECTIONS.find(x=>x.v===$('#dc_section').value);
+    if(def && def.vmin!=null){ $('#dc_velocity').value = ((def.vmin+def.vmax)/2).toFixed(1); }
+    calc();
+  });
+
+  function calc(){
+    const flowVal = num($('#dc_flow').value);
+    const flowUnit = $('#dc_flowUnit').value;
+    const v = num($('#dc_velocity').value);
+    const shape = s.shape;
+    const material = DUCT_MATERIALS.find(m=>m.v===$('#dc_material').value);
+    const sectionDef = DUCT_SECTIONS.find(x=>x.v===$('#dc_section').value);
+
+    const Q = convert(FLOW_UNITS, flowVal, flowUnit, 'm3s'); // m3/s
+    const A = Q/Math.max(v,0.001); // m2
+
+    let D_h, dims, actualV, actualA;
+    if(shape==='round'){
+      const D = Math.sqrt(4*A/Math.PI); // m
+      const Dmm = D*1000;
+      const DmmRound = Math.ceil(Dmm/10)*10;
+      D_h = DmmRound/1000;
+      actualA = Math.PI*D_h*D_h/4;
+      actualV = Q/actualA;
+      dims = 'Ø '+fmt(DmmRound)+' mm';
+    } else {
+      const Hm = num($('#dc_rectH').value)/1000;
+      const Wm = A/Hm;
+      const WmmRound = Math.ceil(Wm*1000/10)*10;
+      const HmmRound = Math.ceil(Hm*1000/10)*10;
+      actualA = (WmmRound/1000)*(HmmRound/1000);
+      actualV = Q/actualA;
+      D_h = 4*actualA/(2*((WmmRound/1000)+(HmmRound/1000)));
+      dims = WmmRound+' × '+HmmRound+' mm';
+    }
+
+    const fr = frictionCalc(actualV, D_h, RHO_AIR, MU_AIR, material.eps);
+    const dpPerM = fr.dpPerM;
+    const dpMmH2OPerM = dpPerM/9.80665;
+
+    let warnHtml = '';
+    if(sectionDef && sectionDef.vmin!=null){
+      if(actualV<sectionDef.vmin-0.3 || actualV>sectionDef.vmax+0.3){
+        warnHtml = '<div class="note-box warn">'+ic('info')+'<span>Vận tốc thực tế ('+fmt(actualV,2)+' m/s) nằm ngoài dải khuyến nghị cho '+sectionDef.t.toLowerCase()+' ('+sectionDef.vmin+'–'+sectionDef.vmax+' m/s). Cân nhắc điều chỉnh kích thước ống.</span></div>';
+      } else {
+        warnHtml = '<div class="note-box">'+ic('info')+'<span>Vận tốc thực tế nằm trong dải khuyến nghị '+sectionDef.vmin+'–'+sectionDef.vmax+' m/s cho '+sectionDef.t.toLowerCase()+'.</span></div>';
+      }
+    }
+    $('#dc_warn').innerHTML = warnHtml;
+
+    $('#dc_stats').innerHTML =
+      statTile('primary','Kích thước ống', dims, '', 'diện tích '+fmt(actualA*1e4/100,3)+' m² (làm tròn theo bước 10mm)') +
+      statTile('','Vận tốc thực tế', fmt(actualV,2), 'm/s') +
+      statTile('','Tổn thất ma sát', fmt(dpPerM,2), 'Pa/m', fmt(dpMmH2OPerM,3)+' mmH₂O/m') +
+      statTile('','Reynolds', fmt(fr.Re), '', fr.Re<2300?'chảy tầng':'chảy rối');
+
+    saveStore('duct', {flow:flowVal, flowUnit, section:$('#dc_section').value, velocity:v, shape, rectH:num($('#dc_rectH').value,250), material:$('#dc_material').value});
+    App._dcLastResult = {dims, actualV, dpPerM, dpMmH2OPerM};
+  }
+  App.currentCalc = calc;
+  calc();
+  $('#dc_copy').addEventListener('click', ()=>{
+    const r = App._dcLastResult; if(!r) return;
+    copyValue('Ống gió: '+r.dims+' — v='+fmt(r.actualV,2)+' m/s — ΔP='+fmt(r.dpPerM,2)+' Pa/m','Đường ống gió');
+  });
+}
+
+/* ============================================================
+   MODULE 4 — PIPE SIZING (water / refrigerant)
+   ============================================================ */
+const PIPE_PRESETS = [
+  {v:'chw', t:'Nước lạnh (chilled water)', vmin:1.0, vmax:2.5, rho:998, mu:0.001, eps:0.000045},
+  {v:'cw', t:'Nước giải nhiệt (condenser water)', vmin:1.5, vmax:3.0, rho:998, mu:0.001, eps:0.000045},
+  {v:'liq', t:'Gas lỏng (liquid line)', vmin:0.5, vmax:1.25, rho:1150, mu:0.00012, eps:0.0000015},
+  {v:'suc', t:'Gas hút (suction line)', vmin:4, vmax:8, rho:25, mu:0.000011, eps:0.0000015},
+  {v:'dis', t:'Gas đẩy (discharge line)', vmin:8, vmax:14, rho:40, mu:0.000013, eps:0.0000015},
+  {v:'custom', t:'Tuỳ chỉnh', vmin:null, vmax:null, rho:1000, mu:0.001, eps:0.000045}
+];
+
+function renderPipe(){
+  const s = Object.assign({
+    flow:20, flowUnit:'m3h', preset:'chw', velocity:1.8, rho:998, mu:1, eps:0.045
+  }, getStore('pipe'));
+
+  $('#mainRoot').innerHTML =
+    pageHead('pipe','Đường ống nước / gas lạnh','Tính đường kính ống dẫn nước (nước lạnh, nước giải nhiệt) hoặc đường ống môi chất lạnh từ lưu lượng và vận tốc thiết kế, ước tính tổn thất áp suất theo Darcy–Weisbach. Thông số môi chất lạnh (khối lượng riêng, độ nhớt) là giá trị tham khảo — có thể chỉnh theo môi chất & nhiệt độ thực tế.') +
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('pipe')+'Lưu lượng & loại lưu chất</h2></div>'+
+      '<div class="grid">'+
+        '<div class="field"><label>Lưu lượng</label><div style="display:flex;gap:8px">'+
+          '<input type="number" id="pp_flow" value="'+s.flow+'" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-primary);font-family:var(--font-mono)">'+
+          '<select id="pp_flowUnit" style="width:92px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-primary)">'+
+            ['m3h','Ls','gpm'].map(k=>'<option value="'+k+'"'+(k===s.flowUnit?' selected':'')+'>'+FLOW_UNITS[k].label+'</option>').join('')+
+          '</select></div></div>'+
+        selectField({id:'pp_preset',label:'Loại lưu chất / đoạn ống',value:s.preset,options:PIPE_PRESETS.map(x=>({v:x.v,t:x.t}))})+
+        field({id:'pp_velocity',label:'Vận tốc thiết kế',value:s.velocity,suffix:'m/s',step:'0.1'})+
+      '</div>'+
+      '<div style="height:14px"></div>'+
+      '<div class="grid-3">'+
+        field({id:'pp_rho',label:'Khối lượng riêng ρ',value:s.rho,suffix:'kg/m³'})+
+        field({id:'pp_mu',label:'Độ nhớt động lực μ',value:s.mu,suffix:'mPa·s',step:'0.001'})+
+        field({id:'pp_eps',label:'Độ nhám thành ống ε',value:s.eps,suffix:'mm',step:'0.001'})+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('pipe')+'Kết quả</h2><button class="btn btn-sm" id="pp_copy">'+ic('copy')+'Sao chép</button></div>'+
+      '<div class="stat-row" id="pp_stats"></div>'+
+      '<div style="height:10px"></div>'+
+      '<div id="pp_warn"></div>'+
+    '</div>';
+
+  $('#pp_preset').addEventListener('change', ()=>{
+    const p = PIPE_PRESETS.find(x=>x.v===$('#pp_preset').value);
+    if(p.vmin!=null) $('#pp_velocity').value = ((p.vmin+p.vmax)/2).toFixed(2);
+    $('#pp_rho').value = p.rho;
+    $('#pp_mu').value = (p.mu*1000).toFixed(4);
+    $('#pp_eps').value = (p.eps*1000).toFixed(4);
+    calc();
+  });
+
+  function calc(){
+    const flowVal = num($('#pp_flow').value);
+    const flowUnit = $('#pp_flowUnit').value;
+    const v = Math.max(num($('#pp_velocity').value),0.001);
+    const rho = num($('#pp_rho').value);
+    const mu = num($('#pp_mu').value)/1000; // input as mPa.s
+    const eps = num($('#pp_eps').value)/1000; // input mm -> m
+    const preset = PIPE_PRESETS.find(x=>x.v===$('#pp_preset').value);
+
+    const Q = convert(FLOW_UNITS, flowVal, flowUnit, 'm3s');
+    const A = Q/v;
+    const D = Math.sqrt(4*A/Math.PI); // m
+    const Dmm = D*1000;
+    const DmmRound = Math.ceil(Dmm/5)*5;
+    const Dr = DmmRound/1000;
+    const Ar = Math.PI*Dr*Dr/4;
+    const vActual = Q/Ar;
+
+    const fr = frictionCalc(vActual, Dr, rho, mu, eps);
+    const dpPerM = fr.dpPerM;
+
+    let warnHtml='';
+    if(preset && preset.vmin!=null){
+      if(vActual<preset.vmin-0.2 || vActual>preset.vmax+0.2){
+        warnHtml = '<div class="note-box warn">'+ic('info')+'<span>Vận tốc thực tế ('+fmt(vActual,2)+' m/s) nằm ngoài dải khuyến nghị '+preset.vmin+'–'+preset.vmax+' m/s cho '+preset.t.toLowerCase()+'.</span></div>';
+      } else {
+        warnHtml = '<div class="note-box">'+ic('info')+'<span>Vận tốc thực tế nằm trong dải khuyến nghị '+preset.vmin+'–'+preset.vmax+' m/s.</span></div>';
+      }
+    }
+    $('#pp_warn').innerHTML = warnHtml;
+
+    $('#pp_stats').innerHTML =
+      statTile('primary','Đường kính trong tối thiểu', 'Ø '+fmt(DmmRound), 'mm', 'làm tròn bước 5mm — chọn cỡ ống thương mại gần nhất') +
+      statTile('','Vận tốc thực tế', fmt(vActual,2), 'm/s') +
+      statTile('','Tổn thất áp suất', fmt(dpPerM,1), 'Pa/m', fmt(dpPerM/9.80665,3)+' mmH₂O/m') +
+      statTile('','Reynolds', fmt(fr.Re), '', fr.Re<2300?'chảy tầng':'chảy rối');
+
+    saveStore('pipe', {flow:flowVal, flowUnit, preset:$('#pp_preset').value, velocity:v, rho, mu:mu*1000, eps:eps*1000});
+    App._ppLastResult = {DmmRound, vActual, dpPerM};
+  }
+  App.currentCalc = calc;
+  calc();
+  $('#pp_copy').addEventListener('click', ()=>{
+    const r = App._ppLastResult; if(!r) return;
+    copyValue('Đường ống: Ø'+fmt(r.DmmRound)+' mm — v='+fmt(r.vActual,2)+' m/s — ΔP='+fmt(r.dpPerM,1)+' Pa/m','Đường ống');
+  });
+}
+
+/* ============================================================
+   MODULE 5 — COMPRESSOR / COP
+   ============================================================ */
+const COP_PRESETS = [
+  {v:'inv', t:'Điều hoà dân dụng Inverter (R32)', cop:3.6},
+  {v:'std', t:'Điều hoà dân dụng thường (R410A)', cop:3.0},
+  {v:'chw', t:'Chiller giải nhiệt nước', cop:5.5},
+  {v:'chair', t:'Chiller giải nhiệt gió', cop:3.2},
+  {v:'cold', t:'Kho lạnh / cấp đông (NH3, bay hơi thấp)', cop:2.0},
+  {v:'custom', t:'Tuỳ chỉnh', cop:3.0}
+];
+
+function renderCompressor(){
+  const s = Object.assign({
+    q0:10, q0Unit:'kW', preset:'inv', cop:3.6, voltage:380, phase:3, cosphi:0.85,
+    price:3000, hoursPerDay:8, daysPerMonth:26
+  }, getStore('compressor'));
+
+  $('#mainRoot').innerHTML =
+    pageHead('compressor','Máy nén & COP','Ước tính công suất điện tiêu thụ, dòng điện và chi phí vận hành từ tải lạnh yêu cầu và hệ số COP tham khảo theo loại hệ thống.') +
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('compressor')+'Tải lạnh & hiệu suất</h2></div>'+
+      '<div class="grid">'+
+        '<div class="field"><label>Tải lạnh cần thiết</label><div style="display:flex;gap:8px">'+
+          '<input type="number" id="cp_q0" value="'+s.q0+'" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-primary);font-family:var(--font-mono)">'+
+          '<select id="cp_q0Unit" style="width:110px;border-radius:10px;border:1px solid var(--panel-border);background:var(--input-bg);color:var(--text-primary)">'+
+            ['kW','BTUh','RT','kcalh'].map(k=>'<option value="'+k+'"'+(k===s.q0Unit?' selected':'')+'>'+CAPACITY_UNITS[k].label+'</option>').join('')+
+          '</select></div></div>'+
+        selectField({id:'cp_preset',label:'Loại hệ thống (COP tham khảo)',value:s.preset,options:COP_PRESETS.map(x=>({v:x.v,t:x.t}))})+
+        field({id:'cp_cop',label:'COP sử dụng',value:s.cop,step:'0.1'})+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('compressor')+'Điện & chi phí vận hành</h2><span class="hint">tuỳ chọn</span></div>'+
+      '<div class="grid-4">'+
+        selectField({id:'cp_phase',label:'Số pha',value:s.phase,options:[{v:1,t:'1 pha'},{v:3,t:'3 pha'}]})+
+        field({id:'cp_voltage',label:'Điện áp U',value:s.voltage,suffix:'V'})+
+        field({id:'cp_cosphi',label:'Hệ số công suất cosφ',value:s.cosphi,step:'0.01',min:0,max:1})+
+        field({id:'cp_price',label:'Giá điện',value:s.price,suffix:'đ/kWh'})+
+      '</div>'+
+      '<div style="height:14px"></div>'+
+      '<div class="grid-3">'+
+        field({id:'cp_hours',label:'Số giờ chạy / ngày',value:s.hoursPerDay,suffix:'h'})+
+        field({id:'cp_days',label:'Số ngày chạy / tháng',value:s.daysPerMonth,suffix:'ngày'})+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><h2>'+ic('compressor')+'Kết quả</h2><button class="btn btn-sm" id="cp_copy">'+ic('copy')+'Sao chép</button></div>'+
+      '<div class="stat-row" id="cp_stats"></div>'+
+      '<div style="height:10px"></div>'+
+      '<div class="note-box">'+ic('info')+'<span>Giá trị COP theo loại hệ thống là mức tham khảo phổ biến, thực tế phụ thuộc thiết kế thiết bị, nhiệt độ bay hơi/ngưng tụ và điều kiện vận hành. Nên dùng thông số từ catalogue nhà sản xuất khi tính toán chính thức.</span></div>'+
+    '</div>';
+
+  $('#cp_preset').addEventListener('change', ()=>{
+    const p = COP_PRESETS.find(x=>x.v===$('#cp_preset').value);
+    $('#cp_cop').value = p.cop;
+    calc();
+  });
+
+  function calc(){
+    const q0Val = num($('#cp_q0').value);
+    const q0Unit = $('#cp_q0Unit').value;
+    const cop = Math.max(num($('#cp_cop').value),0.01);
+    const phase = parseInt($('#cp_phase').value,10);
+    const U = num($('#cp_voltage').value);
+    const cosphi = num($('#cp_cosphi').value);
+    const price = num($('#cp_price').value);
+    const hours = num($('#cp_hours').value);
+    const days = num($('#cp_days').value);
+
+    const q0W = convert(CAPACITY_UNITS, q0Val, q0Unit, 'W');
+    const q0kW = q0W/1000;
+    const Nkw = q0kW/cop;
+    const I = phase===3 ? (Nkw*1000)/(Math.sqrt(3)*U*Math.max(cosphi,0.01)) : (Nkw*1000)/(U*Math.max(cosphi,0.01));
+    const eer = cop*3.412142;
+    const kwhDay = Nkw*hours;
+    const kwhMonth = kwhDay*days;
+    const costMonth = kwhMonth*price;
+
+    $('#cp_stats').innerHTML =
+      statTile('primary','Công suất điện tiêu thụ', fmt(Nkw,2), 'kW', 'EER ≈ '+fmt(eer,1)+' BTU/h/W') +
+      statTile('','Dòng điện ước tính', fmt(I,1), 'A', phase+' pha, cosφ='+fmt(cosphi,2)) +
+      statTile('','Điện năng tiêu thụ', fmt(kwhMonth), 'kWh/tháng', fmt(kwhDay,1)+' kWh/ngày') +
+      statTile('','Chi phí điện ước tính', fmt(costMonth), 'đ/tháng', fmt(price)+' đ/kWh');
+
+    saveStore('compressor', {q0:q0Val,q0Unit,preset:$('#cp_preset').value,cop,voltage:U,phase,cosphi,price,hoursPerDay:hours,daysPerMonth:days});
+    App._cpLastResult = {Nkw,I,kwhMonth,costMonth};
+  }
+  App.currentCalc = calc;
+  calc();
+  $('#cp_copy').addEventListener('click', ()=>{
+    const r = App._cpLastResult; if(!r) return;
+    copyValue('Máy nén: '+fmt(r.Nkw,2)+' kW — I≈'+fmt(r.I,1)+' A — '+fmt(r.kwhMonth)+' kWh/tháng — '+fmt(r.costMonth)+' đ/tháng','Máy nén');
+  });
+}
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+function renderRoute(){
+  App.currentCalc = null;
+  const map = {converter:renderConverter, coolingload:renderCoolingLoad, duct:renderDuct, pipe:renderPipe, compressor:renderCompressor};
+  (map[App.route]||renderConverter)();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+$('#mainRoot').addEventListener('input', (e)=>{ if(App.currentCalc) App.currentCalc(e); });
+renderNav();
+renderRoute();
+$('#statusRight').textContent = 'v1.0 · '+new Date().getFullYear();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+})();
+</script>
+</body>
+</html>
