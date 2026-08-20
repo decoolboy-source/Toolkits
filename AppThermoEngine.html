@@ -14,6 +14,33 @@
 </head>
 <body class="font-sans text-slate-100 h-screen flex flex-col" data-lang="vi" data-unit="SI">
 
+<!-- ============ DISCLAIMER BANNER ============ -->
+<div id="disclaimerBanner" class="hidden shrink-0 z-30 bg-amber-950/30 border-b border-amber-900 text-amber-200 text-xs px-3 md:px-5 py-2 items-start gap-2">
+  <i data-lucide="alert-triangle" width="14" class="text-amber-400 shrink-0 mt-0.5"></i>
+  <span class="flex-1 leading-relaxed">
+    <b>Công cụ ước tính &amp; tra cứu tham khảo.</b> Kết quả dựa trên correlation xấp xỉ (Lee-Kesler/Rackett/Watson) và các
+    hệ số kinh nghiệm ASHRAE/SMACNA, sai số tham khảo so với dữ liệu EOS/nhà sản xuất chính xác. Không dùng thay thế cho
+    tính toán, thẩm định hoặc bảng tra chính thức khi chốt thiết kế/thi công thực tế.
+  </span>
+  <button id="btnDismissDisclaimer" class="shrink-0 text-amber-400 hover:text-amber-200" aria-label="Đóng thông báo" style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;min-height:22px">
+    <i data-lucide="x" width="14">×</i>
+  </button>
+</div>
+<script>
+(function(){
+  var KEY = 'thermoengine_disclaimer_dismissed_v1';
+  var banner = document.getElementById('disclaimerBanner');
+  if(!banner) return;
+  if(!localStorage.getItem(KEY)) banner.classList.remove('hidden');
+  banner.classList.add('flex');
+  var btn = document.getElementById('btnDismissDisclaimer');
+  if(btn) btn.addEventListener('click', function(){
+    banner.classList.add('hidden');
+    try{ localStorage.setItem(KEY, '1'); }catch(e){}
+  });
+})();
+</script>
+
 <!-- ============ TOPBAR ============ -->
 <header class="shrink-0 z-30 bg-panel-900/95 backdrop-blur border-b border-slate-800">
   <div class="flex items-center justify-between px-3 md:px-5 h-14">
@@ -52,9 +79,10 @@
 </div>
 
 <!-- ============ STATUS BAR ============ -->
-<div class="shrink-0 z-20 bg-panel-900 border-t border-slate-800 text-xs text-slate-400 px-3 md:px-5 py-1.5 flex items-center justify-between">
-  <span id="statusText" class="flex items-center gap-1.5"><i data-lucide="circle-dot" width="12" class="text-emerald-400"></i> Ready</span>
-  <span class="font-mono text-slate-600">Created by QuocDe · Ver 2606.23.01</span>
+<div class="shrink-0 z-20 bg-panel-900 border-t border-slate-800 text-xs text-slate-400 px-3 md:px-5 py-1.5 flex items-center justify-between gap-3">
+  <span id="statusText" class="flex items-center gap-1.5 shrink-0"><i data-lucide="circle-dot" width="12" class="text-emerald-400"></i> Ready</span>
+  <span class="hidden md:inline text-slate-500 truncate text-center flex-1">Công cụ ước tính/tra cứu tham khảo — không thay thế tính toán, thẩm định hoặc bảng tra chính thức của nhà sản xuất/tiêu chuẩn.</span>
+  <span class="font-mono text-slate-600 shrink-0">Created by QuocDe · Ver 2606.23.01</span>
 </div>
 
 <!-- ============ TOAST CONTAINER ============ -->
@@ -1286,8 +1314,17 @@ App.ui = {
     App.state.activeTab = id;
     this.renderNav(); // vẽ lại sidebar để highlight đúng cả tab chính và sub-item
     const root = document.getElementById('mainRoot');
-    root.innerHTML = this['render_'+id] ? this['render_'+id]() : '<div class="text-slate-500">—</div>';
-    this.wireTab(id);
+    try{
+      root.innerHTML = this['render_'+id] ? this['render_'+id]() : '<div class="text-slate-500">—</div>';
+      this.wireTab(id);
+    }catch(err){
+      console.error('[showTab:'+id+']', err);
+      root.innerHTML = `<div class="panel p-4 border border-red-800">
+        <div class="flex items-center gap-2 text-red-300 font-semibold mb-1"><i data-lucide="alert-triangle" width="16"></i> Có lỗi khi hiển thị module này</div>
+        <p class="text-xs text-slate-400 leading-relaxed">Có thể do giá trị/dữ liệu nhập không hợp lệ. Vui lòng thử tải lại trang hoặc chọn module khác. Chi tiết lỗi đã được ghi vào console (F12) để hỗ trợ khắc phục.</p>
+      </div>`;
+      this.toast('Đã xảy ra lỗi khi tải module này.', 'red');
+    }
     this.icons();
     const overlay = document.getElementById('mobileNavOverlay');
     if(overlay) overlay.classList.add('hidden');
@@ -1314,6 +1351,17 @@ App.ui = {
       badge.className = `text-xs px-2 py-1 rounded-full border flex items-center gap-1 ${pass?'border-emerald-700 text-emerald-300':'border-red-700 text-red-300'}`;
       badge.innerHTML = pass ? '<i data-lucide="check-circle-2" width="13"></i> PASS' : `<i data-lucide="x-circle" width="13"></i> ${checks[0]}`;
       this.icons();
+    }
+  },
+
+  // Bọc an toàn quanh các hàm run*Calc() gọi từ event listener (click/input) —
+  // một giá trị nhập bất thường gây lỗi JS sẽ hiện toast thay vì làm treo/vỡ giao diện.
+  safeRun(fnName){
+    try{
+      this[fnName]();
+    }catch(err){
+      console.error('['+fnName+']', err);
+      this.toast('Lỗi tính toán — vui lòng kiểm tra lại giá trị vừa nhập.', 'red');
     }
   },
 
@@ -2278,14 +2326,14 @@ App.ui = {
     }));
     const bindNum = (id, key)=>{ const el = $(id); if(el) el.addEventListener('input', ()=>{ App.state.inputs[key] = parseFloat(el.value)||0; App.db && App.admin.autosave(); }); };
     bindNum('inT','T_C'); bindNum('inP','P_bar'); bindNum('inSecT','T_C'); bindNum('inConc','concentration');
-    $('btnCalc').addEventListener('click', ()=>this.runCalc());
+    $('btnCalc').addEventListener('click', ()=>this.safeRun('runCalc'));
     document.querySelectorAll('[data-collapse]').forEach(b=>b.addEventListener('click', ()=>{
       const t = document.getElementById(b.dataset.collapse); t.classList.toggle('collapsed-body');
     }));
     $('btnToggleAudit') && $('btnToggleAudit').addEventListener('click', ()=>{
       $('auditPanel').classList.toggle('hidden');
     });
-    this.runCalc();
+    this.safeRun('runCalc');
   },
 
   wireCoolingLoad(){
@@ -2300,9 +2348,9 @@ App.ui = {
     const bindNum = (id, key)=>{ const el = $(id); if(el) el.addEventListener('input', ()=>{ cl[key] = parseFloat(el.value)||0; App.admin.autosave(); }); };
     bindNum('clConc','concentration'); bindNum('clFlow','flowValue'); bindNum('clTs','Tsupply'); bindNum('clTr','Treturn');
     $('clFlowUnit').addEventListener('change', (e)=>{ cl.flowUnit = e.target.value; });
-    $('btnCalcLoad').addEventListener('click', ()=>this.runCoolingCalc());
+    $('btnCalcLoad').addEventListener('click', ()=>this.safeRun('runCoolingCalc'));
     $('btnToggleAuditLoad') && $('btnToggleAuditLoad').addEventListener('click', ()=>{ $('auditPanelLoad').classList.toggle('hidden'); });
-    this.runCoolingCalc();
+    this.safeRun('runCoolingCalc');
   },
 
   wireInsulation(){
@@ -2336,7 +2384,7 @@ App.ui = {
     $('insTa').addEventListener('input', (e)=>{ ins.Ta = parseFloat(e.target.value)||0; });
     $('insRH').addEventListener('input', (e)=>{ ins.RH = parseFloat(e.target.value)||0; });
     $('insCheckT').addEventListener('input', (e)=>{ ins.checkThickness = parseFloat(e.target.value)||0; });
-    $('btnCalcIns').addEventListener('click', ()=>this.runInsulationCalc());
+    $('btnCalcIns').addEventListener('click', ()=>this.safeRun('runInsulationCalc'));
     $('btnCheckIns').addEventListener('click', ()=>this.runInsulationCheck());
     document.querySelectorAll('.panelQuickBtn').forEach(b=>b.addEventListener('click', ()=>{
       ins.checkThickness = parseFloat(b.dataset.panelD);
@@ -2344,7 +2392,7 @@ App.ui = {
       this.runInsulationCheck();
     }));
     $('btnToggleAuditIns') && $('btnToggleAuditIns').addEventListener('click', ()=>{ $('auditPanelIns').classList.toggle('hidden'); });
-    this.runInsulationCalc();
+    this.safeRun('runInsulationCalc');
   },
 
   runInsulationCalc(){
@@ -2452,9 +2500,9 @@ App.ui = {
     $('elP') && $('elP').addEventListener('input', (ev)=>{ e.powerKw=parseFloat(ev.target.value)||0; });
     $('elI') && $('elI').addEventListener('input', (ev)=>{ e.current=parseFloat(ev.target.value)||0; });
     $('elCosphi').addEventListener('input', (ev)=>{ e.cosphi=parseFloat(ev.target.value)||0.01; });
-    $('btnCalcEl').addEventListener('click', ()=>this.runElectricalCalc());
+    $('btnCalcEl').addEventListener('click', ()=>this.safeRun('runElectricalCalc'));
     $('btnToggleAuditEl') && $('btnToggleAuditEl').addEventListener('click', ()=>{ $('auditPanelEl').classList.toggle('hidden'); });
-    this.runElectricalCalc();
+    this.safeRun('runElectricalCalc');
   },
 
   runElectricalCalc(){
@@ -2495,9 +2543,9 @@ App.ui = {
     $('ctFill').addEventListener('input', (ev)=>{ c.fillFactorPct = parseFloat(ev.target.value)||0; });
     document.querySelectorAll('.fillPreset').forEach(b=>b.addEventListener('click', ()=>{ c.fillFactorPct = parseFloat(b.dataset.fill); this.showTab('calc'); }));
     $('ctHeight').addEventListener('input', (ev)=>{ c.trayHeight = parseFloat(ev.target.value)||0; });
-    $('btnCalcCt').addEventListener('click', ()=>this.runCabletrayCalc());
+    $('btnCalcCt').addEventListener('click', ()=>this.safeRun('runCabletrayCalc'));
     $('btnToggleAuditCt') && $('btnToggleAuditCt').addEventListener('click', ()=>{ $('auditPanelCt').classList.toggle('hidden'); });
-    this.runCabletrayCalc();
+    this.safeRun('runCabletrayCalc');
   },
 
   runCabletrayCalc(){
@@ -2531,9 +2579,9 @@ App.ui = {
     $('vdCurrent').addEventListener('input', (ev)=>{ v.current=parseFloat(ev.target.value)||0; });
     $('vdVoltage').addEventListener('input', (ev)=>{ v.voltage=parseFloat(ev.target.value)||0; });
     $('vdCosphi').addEventListener('input', (ev)=>{ v.cosphi=parseFloat(ev.target.value)||0.01; });
-    $('btnCalcVd').addEventListener('click', ()=>this.runVoltagedropCalc());
+    $('btnCalcVd').addEventListener('click', ()=>this.safeRun('runVoltagedropCalc'));
     $('btnToggleAuditVd') && $('btnToggleAuditVd').addEventListener('click', ()=>{ $('auditPanelVd').classList.toggle('hidden'); });
-    this.runVoltagedropCalc();
+    this.safeRun('runVoltagedropCalc');
   },
 
   runVoltagedropCalc(){
@@ -2577,9 +2625,9 @@ App.ui = {
     $('plAisles').addEventListener('input', (e)=>{ p.nAisles=parseInt(e.target.value)||0; });
     $('plAisleW').addEventListener('input', (e)=>{ p.aisleWidth=parseFloat(e.target.value)||0; });
     $('plLayers').addEventListener('input', (e)=>{ p.nLayers=parseInt(e.target.value)||1; });
-    $('btnCalcPallet').addEventListener('click', ()=>this.runPalletCalc());
+    $('btnCalcPallet').addEventListener('click', ()=>this.safeRun('runPalletCalc'));
     $('btnToggleAuditPallet') && $('btnToggleAuditPallet').addEventListener('click', ()=>{ $('auditPanelPallet').classList.toggle('hidden'); });
-    this.runPalletCalc();
+    this.safeRun('runPalletCalc');
   },
 
   runPalletCalc(){
@@ -2621,9 +2669,9 @@ App.ui = {
     $('asBx') && $('asBx').addEventListener('input', (e)=>{ a.Bx=parseFloat(e.target.value)||0; });
     $('asBy') && $('asBy').addEventListener('input', (e)=>{ a.By=parseFloat(e.target.value)||0; });
     $('asHandling').addEventListener('input', (e)=>{ a.handlingTime=parseFloat(e.target.value)||0; });
-    $('btnCalcAsrs').addEventListener('click', ()=>this.runAsrsCalc());
+    $('btnCalcAsrs').addEventListener('click', ()=>this.safeRun('runAsrsCalc'));
     $('btnToggleAuditAsrs') && $('btnToggleAuditAsrs').addEventListener('click', ()=>{ $('auditPanelAsrs').classList.toggle('hidden'); });
-    this.runAsrsCalc();
+    this.safeRun('runAsrsCalc');
   },
 
   runAsrsCalc(){
@@ -2663,9 +2711,9 @@ App.ui = {
     $('pyTdb').addEventListener('input', (e)=>{ p.Tdb=parseFloat(e.target.value)||0; });
     $('pyRH').addEventListener('input', (e)=>{ p.RH=parseFloat(e.target.value)||0; });
     $('pyP').addEventListener('input', (e)=>{ p.P_kPa=parseFloat(e.target.value)||0; });
-    $('btnCalcPsy').addEventListener('click', ()=>this.runPsychroCalc());
+    $('btnCalcPsy').addEventListener('click', ()=>this.safeRun('runPsychroCalc'));
     $('btnToggleAuditPsy') && $('btnToggleAuditPsy').addEventListener('click', ()=>{ $('auditPanelPsy').classList.toggle('hidden'); });
-    this.runPsychroCalc();
+    this.safeRun('runPsychroCalc');
   },
 
   runPsychroCalc(){
@@ -2701,10 +2749,10 @@ App.ui = {
       u.fromUnit = units[0]; u.toUnit = units[1]||units[0];
       this.showTab('calc');
     });
-    $('ucValue').addEventListener('input', (e)=>{ u.value=parseFloat(e.target.value)||0; this.runUnitconvCalc(); });
-    $('ucFrom').addEventListener('change', (e)=>{ u.fromUnit=e.target.value; this.runUnitconvCalc(); });
-    $('ucTo').addEventListener('change', (e)=>{ u.toUnit=e.target.value; this.runUnitconvCalc(); });
-    this.runUnitconvCalc();
+    $('ucValue').addEventListener('input', (e)=>{ u.value=parseFloat(e.target.value)||0; this.safeRun('runUnitconvCalc'); });
+    $('ucFrom').addEventListener('change', (e)=>{ u.fromUnit=e.target.value; this.safeRun('runUnitconvCalc'); });
+    $('ucTo').addEventListener('change', (e)=>{ u.toUnit=e.target.value; this.safeRun('runUnitconvCalc'); });
+    this.safeRun('runUnitconvCalc');
   },
 
   runUnitconvCalc(){
@@ -2729,9 +2777,9 @@ App.ui = {
     $('apN') && $('apN').addEventListener('input', (e)=>{ a.n=parseFloat(e.target.value)||1; });
     $('apMdot') && $('apMdot').addEventListener('input', (e)=>{ a.mdotManual=parseFloat(e.target.value)||0; });
     $('apL').addEventListener('input', (e)=>{ a.L=parseFloat(e.target.value)||0; });
-    $('btnCalcAdvpipe').addEventListener('click', ()=>this.runAdvpipeCalc());
+    $('btnCalcAdvpipe').addEventListener('click', ()=>this.safeRun('runAdvpipeCalc'));
     $('btnToggleAuditAdvpipe') && $('btnToggleAuditAdvpipe').addEventListener('click', ()=>{ $('auditPanelAdvpipe').classList.toggle('hidden'); });
-    this.runAdvpipeCalc();
+    this.safeRun('runAdvpipeCalc');
   },
 
   runAdvpipeCalc(){
@@ -2808,9 +2856,9 @@ App.ui = {
     $('psFlow').addEventListener('input', (e)=>{ p.flowValue = parseFloat(e.target.value)||0; });
     $('psVmin').addEventListener('input', (e)=>{ p.vMin = parseFloat(e.target.value)||0; });
     $('psVmax').addEventListener('input', (e)=>{ p.vMax = parseFloat(e.target.value)||0; });
-    $('btnCalcPipe').addEventListener('click', ()=>this.runPipeSizingCalc());
+    $('btnCalcPipe').addEventListener('click', ()=>this.safeRun('runPipeSizingCalc'));
     $('btnToggleAuditPipe') && $('btnToggleAuditPipe').addEventListener('click', ()=>{ $('auditPanelPipe').classList.toggle('hidden'); });
-    this.runPipeSizingCalc();
+    this.safeRun('runPipeSizingCalc');
   },
 
   runPipeSizingCalc(){
@@ -2874,11 +2922,11 @@ App.ui = {
   wireLubricant(){
     const $ = (s)=>document.getElementById(s);
     const lub = App.state.lubricant;
-    $('lubModel').addEventListener('change', (e)=>{ lub.modelId = e.target.value; this.runLubricantCalc(); });
+    $('lubModel').addEventListener('change', (e)=>{ lub.modelId = e.target.value; this.safeRun('runLubricantCalc'); });
     document.querySelectorAll('.ecoBtn').forEach(b=>b.addEventListener('click', ()=>{ lub.config = b.dataset.eco; this.showTab('calc'); }));
     $('lubQty').addEventListener('input', (e)=>{ lub.qty = parseInt(e.target.value)||1; });
     $('lubMargin').addEventListener('input', (e)=>{ lub.marginPct = parseFloat(e.target.value)||0; });
-    $('btnCalcLub').addEventListener('click', ()=>this.runLubricantCalc());
+    $('btnCalcLub').addEventListener('click', ()=>this.safeRun('runLubricantCalc'));
     $('lubCsvImport').addEventListener('change', async (e)=>{
       const file = e.target.files[0]; if(!file) return;
       const text = await file.text();
@@ -2902,7 +2950,7 @@ App.ui = {
         this.showTab('calc');
       }catch(err){ App.ui.toast('CSV không hợp lệ: '+err.message, 'red'); }
     });
-    this.runLubricantCalc();
+    this.safeRun('runLubricantCalc');
   },
 
   runLubricantCalc(){
@@ -3605,18 +3653,18 @@ App.kbd = {
       if(e.key==='Escape'){ App.cmd.close(); document.getElementById('modalOverlay').classList.add('hidden'); }
       if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); if(App.state.activeTab==='calc'){
         const sub = App.state.activeCalcSub;
-        if(sub==='insulation') App.ui.runInsulationCalc();
-        else if(sub==='electrical') App.ui.runElectricalCalc();
-        else if(sub==='cabletray') App.ui.runCabletrayCalc();
-        else if(sub==='voltagedrop') App.ui.runVoltagedropCalc();
-        else if(sub==='pallet') App.ui.runPalletCalc();
-        else if(sub==='asrs') App.ui.runAsrsCalc();
-        else if(sub==='psychro') App.ui.runPsychroCalc();
-        else if(sub==='advpipe') App.ui.runAdvpipeCalc();
-        else if(sub==='coolingload') App.ui.runCoolingCalc();
-        else if(sub==='pipesizing') App.ui.runPipeSizingCalc();
-        else if(sub==='lubricant') App.ui.runLubricantCalc();
-        else App.ui.runCalc();
+        if(sub==='insulation') App.ui.safeRun('runInsulationCalc');
+        else if(sub==='electrical') App.ui.safeRun('runElectricalCalc');
+        else if(sub==='cabletray') App.ui.safeRun('runCabletrayCalc');
+        else if(sub==='voltagedrop') App.ui.safeRun('runVoltagedropCalc');
+        else if(sub==='pallet') App.ui.safeRun('runPalletCalc');
+        else if(sub==='asrs') App.ui.safeRun('runAsrsCalc');
+        else if(sub==='psychro') App.ui.safeRun('runPsychroCalc');
+        else if(sub==='advpipe') App.ui.safeRun('runAdvpipeCalc');
+        else if(sub==='coolingload') App.ui.safeRun('runCoolingCalc');
+        else if(sub==='pipesizing') App.ui.safeRun('runPipeSizingCalc');
+        else if(sub==='lubricant') App.ui.safeRun('runLubricantCalc');
+        else App.ui.safeRun('runCalc');
       } }
       if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); App.admin.autosave(); App.ui.toast('Đã lưu'); }
     });
@@ -3652,6 +3700,17 @@ App.init = async function(){
   App.ui.init();
   App.kbd.init();
 };
+
+// Lưới an toàn toàn cục — bắt các lỗi JS/Promise không mong muốn thoát khỏi mọi
+// try/catch cục bộ, tránh việc trang bị treo/trắng mà không có thông báo nào cho người dùng.
+window.addEventListener('error', (e)=>{
+  console.error('[global error]', e.error || e.message);
+  try{ App.ui.toast('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại hoặc tải lại trang.', 'red'); }catch(_){}
+});
+window.addEventListener('unhandledrejection', (e)=>{
+  console.error('[unhandled promise rejection]', e.reason);
+  try{ App.ui.toast('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại hoặc tải lại trang.', 'red'); }catch(_){}
+});
 
 document.addEventListener('DOMContentLoaded', ()=>App.init());
 return App;
