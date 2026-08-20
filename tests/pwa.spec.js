@@ -26,9 +26,23 @@ test.describe('PWA packaging', () => {
 
   test('service worker registers and reaches the active state', async ({ page }) => {
     await page.goto('/AppThermoEngine.html');
+    // `serviceWorker.ready` can resolve a tick before the active worker's
+    // own state flips from "activating" to "activated" — wait for the real
+    // statechange event instead of reading state at a single point in time.
     const state = await page.evaluate(async () => {
       const reg = await navigator.serviceWorker.ready;
-      return reg.active ? reg.active.state : null;
+      if (reg.active.state === 'activated') return 'activated';
+      return await new Promise((resolve) => {
+        const worker = reg.active;
+        const onChange = () => {
+          if (worker.state === 'activated') {
+            worker.removeEventListener('statechange', onChange);
+            resolve('activated');
+          }
+        };
+        worker.addEventListener('statechange', onChange);
+        setTimeout(() => resolve(worker.state), 5000);
+      });
     });
     expect(state).toBe('activated');
   });
