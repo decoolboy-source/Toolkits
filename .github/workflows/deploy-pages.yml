@@ -46,7 +46,8 @@ jobs:
       - name: Stage public files only (exclude dev tooling/node_modules)
         run: |
           mkdir -p _site
-          cp AppThermoEngine.html _site/
+          cp AppThermoEngine.html manifest.webmanifest sw.js _site/
+          cp -r icons _site/icons
           printf '<!DOCTYPE html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./AppThermoEngine.html"><a href="./AppThermoEngine.html">AppThermoEngine</a>' > _site/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

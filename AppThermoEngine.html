@@ -11,6 +11,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="theme-color" content="#0a0d16">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ThermoEngine">
 </head>
 <body class="font-sans text-slate-100 h-screen flex flex-col" data-lang="vi" data-unit="SI">
 
@@ -53,6 +61,9 @@
       <span class="hidden md:inline text-xs text-slate-500 font-mono ml-1">Module 1 · Lookup Engine</span>
     </div>
     <div class="flex items-center gap-2">
+      <button id="btnInstallApp" class="focus-ring hidden items-center gap-1.5 text-xs text-emerald-300 border border-emerald-700 rounded-lg px-2.5 py-1.5 hover:bg-emerald-950/30">
+        <i data-lucide="download" width="14"></i><span class="hidden md:inline">Cài đặt ứng dụng</span>
+      </button>
       <button id="btnCmdK" class="focus-ring hidden md:flex items-center gap-1.5 text-xs text-slate-400 border border-slate-700 rounded-lg px-2.5 py-1.5 hover:border-slate-600">
         <i data-lucide="search" width="14"></i><span>Ctrl+K</span>
       </button>
@@ -3714,6 +3725,43 @@ window.addEventListener('unhandledrejection', (e)=>{
 
 document.addEventListener('DOMContentLoaded', ()=>App.init());
 return App;
+})();
+</script>
+
+<!-- ============ PWA: install prompt + service worker ============ -->
+<script>
+(function(){
+  var btn = document.getElementById('btnInstallApp');
+  var deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredPrompt = e;
+    if(btn){ btn.classList.remove('hidden'); btn.classList.add('flex'); }
+  });
+
+  if(btn) btn.addEventListener('click', function(){
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.finally(function(){
+      deferredPrompt = null;
+      btn.classList.add('hidden');
+      btn.classList.remove('flex');
+    });
+  });
+
+  window.addEventListener('appinstalled', function(){
+    if(btn){ btn.classList.add('hidden'); btn.classList.remove('flex'); }
+  });
+
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if(isStandalone && btn) btn.classList.add('hidden');
+
+  if('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){ /* offline packaging is a progressive enhancement, never block the app */ });
+    });
+  }
 })();
 </script>
 </body>

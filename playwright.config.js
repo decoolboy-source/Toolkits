@@ -16,5 +16,14 @@ module.exports = defineConfig({
   use: {
     ...devices['Desktop Chrome'],
     launchOptions,
+    baseURL: 'http://127.0.0.1:4173',
+  },
+  // Static server for PWA tests (manifest/service worker require a real
+  // http(s) origin — file:// cannot register a service worker at all).
+  webServer: {
+    command: 'python3 -m http.server 4173',
+    url: 'http://127.0.0.1:4173/AppThermoEngine.html',
+    reuseExistingServer: !process.env.CI,
+    timeout: 10000,
   },
 });
