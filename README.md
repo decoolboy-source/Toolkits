@@ -49,3 +49,13 @@ Chuẩn hóa để chạy chung origin `decoolboy-source.github.io` với các P
 - Tên cache đổi sang `Toolkits-v<số>` (trước là `appthermoengine-v<số>`). Khi kích hoạt chỉ xóa cache của chính app này (cả tiền tố mới và cũ), không đụng cache của app khác.
 - Khóa localStorage có tiền tố `Toolkits:` (`thermoengine_lang`, `thermoengine_projects`, `thermoengine_disclaimer_dismissed_v1`). Lần đầu mở bản mới, app tự chép dữ liệu từ khóa cũ sang khóa mới nếu khóa mới chưa có. Khóa cũ được giữ nguyên.
 - CSDL IndexedDB đổi tên sang `Toolkits:thermoengine_db`. Lần đầu mở, app chép toàn bộ bảng và bản ghi từ CSDL cũ `thermoengine_db` sang. CSDL cũ được giữ nguyên.
+
+#### Xuất/Nhập dữ liệu (cùng bản)
+
+Tab Dự án: file `Toolkits_YYYYMMDD.json` chứa toàn bộ dự án. Vẫn nhận file `thermoengine_export.json` kiểu cũ. Bỏ lựa chọn tải lên CSV ở mục này (trước đây chỉ báo "chưa hỗ trợ").
+
+- File gồm các trường `app`, `schemaVersion` (= 1), `exportedAt`, `projectCount`, `data`.
+- Khi nhập: kiểm tra định dạng JSON, đúng `app` và `schemaVersion` **trước khi ghi**; báo số dự án; hỏi **Gộp** hay
+  **Thay thế**; xác nhận lần cuối. File sai định dạng thì báo lỗi tiếng Việt và không ghi gì.
+- Xử lý hoàn toàn trên trình duyệt, không gửi dữ liệu đi đâu.
+- Gộp: dự án trùng mã được thay bằng bản trong file. Thay thế: xóa hết dự án rồi ghi theo file.
