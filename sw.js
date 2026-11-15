@@ -1,6 +1,8 @@
 // Cache Storage dùng chung cả origin decoolboy-source.github.io: chỉ xóa cache của chính app này.
-const CACHE_PREFIX = 'appthermoengine-';
-const CACHE_NAME = CACHE_PREFIX + 'v1';
+const CACHE_PREFIX = 'Toolkits-';
+// Tiền tố cũ của chính app này (trước khi đổi sang tên repo): vẫn dọn để không để lại cache rác.
+const LEGACY_CACHE_PREFIX = 'appthermoengine-';
+const CACHE_NAME = CACHE_PREFIX + 'v2';
 const APP_SHELL = [
   './AppThermoEngine.html',
   './manifest.webmanifest',
@@ -20,7 +22,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => (k.startsWith(CACHE_PREFIX) || k.startsWith(LEGACY_CACHE_PREFIX)) && k !== CACHE_NAME).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });

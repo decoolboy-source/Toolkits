@@ -35,8 +35,69 @@
   </button>
 </div>
 <script>
+/* [Toolkits] localStorage dùng chung origin với các PWA khác: mọi khóa của app này có tiền tố "Toolkits:".
+   Lần đầu mở bản mới: chép dữ liệu từ khóa cũ sang khóa mới (nếu khóa mới chưa có). Giữ nguyên khóa cũ. */
+(function(){try{var P="Toolkits:",E=["thermoengine_disclaimer_dismissed_v1", "thermoengine_lang", "thermoengine_projects"],F=[],i,k,K=[];
+for(i=0;i<localStorage.length;i++){k=localStorage.key(i);if(k&&k.indexOf(P)!==0)K.push(k);}
+K.forEach(function(k){var hit=E.indexOf(k)>=0||F.some(function(f){return k.indexOf(f)===0;});
+if(hit&&localStorage.getItem(P+k)===null)localStorage.setItem(P+k,localStorage.getItem(k));});
+}catch(e){}})();
+/* Chép CSDL IndexedDB tên cũ sang tên mới có tiền tố (một lần, giữ nguyên CSDL cũ).
+   Bỏ qua nếu CSDL mới đã có hoặc CSDL cũ không tồn tại. Không bao giờ báo lỗi ra ngoài. */
+window.__idbMigrateOnce = window.__idbMigrateOnce || function(oldName, newName){
+  var memo = window.__idbMigrateMemo = window.__idbMigrateMemo || {};
+  if (memo[newName]) return memo[newName];
+  return memo[newName] = new Promise(function(done){
+    if (typeof indexedDB === 'undefined' || oldName === newName) return done();
+    function exists(name, cb){
+      var r; try { r = indexedDB.open(name); } catch (e) { return cb(false); }
+      r.onupgradeneeded = function(e){ e.target.transaction.abort(); }; // chưa có: hủy để không tạo CSDL rỗng
+      r.onsuccess = function(){ r.result.close(); cb(true); };
+      r.onerror = function(ev){ if (ev && ev.preventDefault) ev.preventDefault(); cb(false); };
+    }
+    exists(newName, function(hasNew){ if (hasNew) return done();
+      exists(oldName, function(hasOld){ if (!hasOld) return done();
+        var ro = indexedDB.open(oldName);
+        ro.onerror = function(ev){ if (ev && ev.preventDefault) ev.preventDefault(); done(); };
+        ro.onsuccess = function(){
+          var src = ro.result, names = [].slice.call(src.objectStoreNames), schema = [], data = {};
+          if (!names.length) { src.close(); return done(); }
+          var tx = src.transaction(names, 'readonly');
+          names.forEach(function(n){
+            var s = tx.objectStore(n), vals = null, keys = null;
+            schema.push({ name: n, keyPath: s.keyPath, autoIncrement: s.autoIncrement,
+              indexes: [].slice.call(s.indexNames).map(function(i){ var x = s.index(i);
+                return { name: i, keyPath: x.keyPath, unique: x.unique, multiEntry: x.multiEntry }; }) });
+            s.getAll().onsuccess = function(e){ vals = e.target.result; if (keys) data[n] = { v: vals, k: keys }; };
+            s.getAllKeys().onsuccess = function(e){ keys = e.target.result; if (vals) data[n] = { v: vals, k: keys }; };
+          });
+          tx.onerror = function(){ src.close(); done(); };
+          tx.oncomplete = function(){
+            var ver = src.version; src.close();
+            var rn = indexedDB.open(newName, ver);
+            rn.onupgradeneeded = function(e){
+              var db = e.target.result, t = e.target.transaction;
+              schema.forEach(function(sc){
+                var o = {}; if (sc.keyPath !== null) o.keyPath = sc.keyPath; if (sc.autoIncrement) o.autoIncrement = true;
+                var st = db.createObjectStore(sc.name, o);
+                sc.indexes.forEach(function(i){ st.createIndex(i.name, i.keyPath, { unique: i.unique, multiEntry: i.multiEntry }); });
+              });
+              schema.forEach(function(sc){
+                var st = t.objectStore(sc.name), d = data[sc.name]; if (!d) return;
+                d.v.forEach(function(v, i){ if (sc.keyPath === null) st.put(v, d.k[i]); else st.put(v); });
+              });
+            };
+            rn.onsuccess = function(){ rn.result.close(); done(); };
+            rn.onerror = function(ev){ if (ev && ev.preventDefault) ev.preventDefault(); done(); };
+          };
+        };
+      });
+    });
+  });
+};
+
 (function(){
-  var KEY = 'thermoengine_disclaimer_dismissed_v1';
+  var KEY = 'Toolkits:thermoengine_disclaimer_dismissed_v1';
   var banner = document.getElementById('disclaimerBanner');
   if(!banner) return;
   if(!localStorage.getItem(KEY)) banner.classList.remove('hidden');
@@ -138,7 +199,7 @@ const App = {
     activeTab: 'calc',
     activeCalcSub: 'lookup',
     activeProjectId: null,
-    lang: localStorage.getItem('thermoengine_lang') || 'vi',
+    lang: localStorage.getItem('Toolkits:thermoengine_lang') || 'vi',
     unit: 'SI',
     inputs: {
       category: 'refrigerant',
@@ -1190,11 +1251,12 @@ App.calc.engine = {
    DB: IndexedDB (ưu tiên) + localStorage fallback — prefix theo app
    ===================================================================== */
 App.db = {
-  NAME: 'thermoengine_db', STORE: 'projects', _idb: null,
+  NAME: 'Toolkits:thermoengine_db', LEGACY_NAME: 'thermoengine_db', STORE: 'projects', _idb: null,
 
   async init(){
     if(!('indexedDB' in window)){ App.ui.toast('IndexedDB không hỗ trợ — dùng localStorage', 'amber'); return; }
     try{
+      await window.__idbMigrateOnce(this.LEGACY_NAME, this.NAME);
       this._idb = await new Promise((res, rej)=>{
         const req = indexedDB.open(this.NAME, 1);
         req.onupgradeneeded = (e)=>{
@@ -1217,9 +1279,9 @@ App.db = {
         tx.onerror = ()=>rej(tx.error);
       });
     }
-    const all = JSON.parse(localStorage.getItem('thermoengine_projects')||'{}');
+    const all = JSON.parse(localStorage.getItem('Toolkits:thermoengine_projects')||'{}');
     all[proj.id] = proj;
-    localStorage.setItem('thermoengine_projects', JSON.stringify(all));
+    localStorage.setItem('Toolkits:thermoengine_projects', JSON.stringify(all));
     return true;
   },
 
@@ -1235,7 +1297,7 @@ App.db = {
         };
       });
     }
-    const all = JSON.parse(localStorage.getItem('thermoengine_projects')||'{}');
+    const all = JSON.parse(localStorage.getItem('Toolkits:thermoengine_projects')||'{}');
     return Object.values(all);
   },
 
@@ -1247,9 +1309,9 @@ App.db = {
         tx.oncomplete = ()=>res(true);
       });
     }
-    const all = JSON.parse(localStorage.getItem('thermoengine_projects')||'{}');
+    const all = JSON.parse(localStorage.getItem('Toolkits:thermoengine_projects')||'{}');
     delete all[id];
-    localStorage.setItem('thermoengine_projects', JSON.stringify(all));
+    localStorage.setItem('Toolkits:thermoengine_projects', JSON.stringify(all));
     return true;
   }
 };
@@ -3286,7 +3348,7 @@ App.ui = {
   wireSettings(){
     document.querySelectorAll('.langBtn').forEach(b=>b.addEventListener('click', ()=>{
       App.state.lang = b.dataset.lang; document.body.setAttribute('data-lang', App.state.lang);
-      localStorage.setItem('thermoengine_lang', App.state.lang);
+      localStorage.setItem('Toolkits:thermoengine_lang', App.state.lang);
       this.renderNav(); this.showTab(App.state.activeTab);
     }));
     document.querySelectorAll('.unitBtn').forEach(b=>b.addEventListener('click', ()=>{
@@ -3759,7 +3821,7 @@ return App;
 
   if('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('./sw.js').catch(function(){ /* offline packaging is a progressive enhancement, never block the app */ });
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function(){ /* offline packaging is a progressive enhancement, never block the app */ });
     });
   }
 })();
