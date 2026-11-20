@@ -2,13 +2,21 @@
 const CACHE_PREFIX = 'Toolkits-';
 // Tiền tố cũ của chính app này (trước khi đổi sang tên repo): vẫn dọn để không để lại cache rác.
 const LEGACY_CACHE_PREFIX = 'appthermoengine-';
-const CACHE_NAME = CACHE_PREFIX + 'v2';
+const CACHE_NAME = CACHE_PREFIX + 'v3';
 const APP_SHELL = [
   './AppThermoEngine.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
+  './vendor/lucide.min.js',
+  './vendor/fonts/fonts.css',
+  './vendor/fonts/Inter-latin.woff2',
+  './vendor/fonts/Inter-latin-ext.woff2',
+  './vendor/fonts/Inter-vietnamese.woff2',
+  './vendor/fonts/JetBrainsMono-latin.woff2',
+  './vendor/fonts/JetBrainsMono-latin-ext.woff2',
+  './vendor/fonts/JetBrainsMono-vietnamese.woff2',
 ];
 
 self.addEventListener('install', (event) => {

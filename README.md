@@ -32,6 +32,7 @@ AppThermoEngine.html     Ứng dụng (một file)
 manifest.webmanifest     Khai báo PWA
 sw.js                    Service worker (cache offline)
 icons/                   Biểu tượng
+vendor/                  Thư viện + font nhúng sẵn (xem vendor/README.md)
 tests/                   Kiểm thử Playwright
 .github/workflows/       Kiểm thử và deploy GitHub Pages
 ```
@@ -39,6 +40,13 @@ tests/                   Kiểm thử Playwright
 Khi sửa `AppThermoEngine.html`, tăng số phiên bản cache trong `sw.js` (`Toolkits-v<số>`).
 
 ## Lịch sử phiên bản
+
+### 2026-11-20 — bản cache `Toolkits-v3`
+
+Bỏ hoàn toàn việc gọi CDN khi chạy (theo quy tắc "thư viện nhúng, không gọi CDN"):
+
+- Lucide (ghim 1.77.0, trước là `lucide@latest`) và font Inter, JetBrains Mono (latin + tiếng Việt) nằm trong `vendor/`; nguồn, phiên bản, giấy phép ở `vendor/README.md`.
+- `vendor/` nằm trong app shell của service worker: icon và font hiển thị đúng cả khi offline (trước đây offline thì mất icon, font về mặc định).
 
 ### 2026-11-15 — bản cache `Toolkits-v2`
 
