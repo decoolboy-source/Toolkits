@@ -6,7 +6,7 @@ const APP_PATH = 'file://' + path.resolve(__dirname, '..', 'AppThermoEngine.html
 
 const CALC_SUBS = [
   'lookup', 'insulation', 'coolingload', 'electrical', 'cabletray', 'voltagedrop',
-  'pallet', 'asrs', 'psychro', 'unitconv', 'advpipe', 'standards', 'pipesizing', 'lubricant',
+  'pallet', 'asrs', 'psychro', 'unitconv', 'advpipe', 'standards', 'pipesizing',
 ];
 const OTHER_TABS = ['db', 'admin', 'report', 'ai', 'settings', 'about'];
 

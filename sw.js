@@ -2,7 +2,7 @@
 const CACHE_PREFIX = 'Toolkits-';
 // Tiền tố cũ của chính app này (trước khi đổi sang tên repo): vẫn dọn để không để lại cache rác.
 const LEGACY_CACHE_PREFIX = 'appthermoengine-';
-const CACHE_NAME = CACHE_PREFIX + 'v4';
+const CACHE_NAME = CACHE_PREFIX + 'v5';
 const APP_SHELL = [
   './AppThermoEngine.html',
   './manifest.webmanifest',

@@ -41,6 +41,16 @@ Khi sửa `AppThermoEngine.html`, tăng số phiên bản cache trong `sw.js` (`
 
 ## Lịch sử phiên bản
 
+### 2026-11-27 — bản cache `Toolkits-v5`
+
+- Menu "Tính Toán" xếp theo chuyên ngành: Lạnh công nghiệp, HVAC & Nước, Cách nhiệt & Kho lạnh,
+  Điện, Kho vận, Tra cứu chung. Mã M1–M8 vẫn giữ, hiện nhỏ cuối mỗi dòng. Command Palette (Ctrl+K)
+  sinh danh sách từ cùng cấu hình menu.
+- Gỡ "Lubricant Mycom": đã chuyển sang app MYCOMselect (màn hình "Dầu nạp", ghép sẵn với từng
+  model chọn máy). Trong nhóm Lạnh công nghiệp có link mở thẳng màn hình đó. Phiên/dự án cũ đang mở
+  công cụ này tự về Tra cứu.
+- Kiểm thử mới: `tests/menu.spec.js`.
+
 ### 2026-11-26 — bản cache `Toolkits-v4`
 
 Sửa 6 chỗ tính toán đi ngược logic thiết kế:
