@@ -41,6 +41,28 @@ Khi sửa `AppThermoEngine.html`, tăng số phiên bản cache trong `sw.js` (`
 
 ## Lịch sử phiên bản
 
+### 2026-11-26 — bản cache `Toolkits-v4`
+
+Sửa 6 chỗ tính toán đi ngược logic thiết kế:
+
+1. **Ống hồi dịch bơm (M7)**: trước đây tính vận tốc bằng khối lượng riêng LỎNG nên ra cỡ ống quá nhỏ
+   (NH3 200 kW, n=3 → DN15). Nay tính dòng 2 pha theo mô hình đồng nhất (x = 1/n) và kiểm tra thêm tổn
+   thất ≤1K → DN100.
+2. **Tính chất môi chất lạnh (M1, M3, M7)**: thay correlation Lee-Kesler/Rackett/Watson (sai 13–44%)
+   bằng bảng bão hòa sinh từ CoolProp, nhúng sẵn, chạy offline. Môi chất hỗn hợp hiện cả điểm sương và
+   điểm sôi. Ngoài phạm vi bảng mới dùng correlation, có cảnh báo. Sinh lại bảng:
+   `python tools/gen_sat_tables.py > sat.json` rồi `python tools/inject_sat_tables.py sat.json`.
+3. **Cách nhiệt chống đọng sương (M2)**: h₀ mặc định 23 → 9 W/m²K (không khí lặng); thêm nút chọn theo
+   vỏ bọc (5,7 / 9) và cảnh báo khi h₀ > 12.
+4. **Sụt áp (M4)**: điện trở tính ở nhiệt độ làm việc (PVC 70°C, XLPE 90°C) thay vì 20°C; giới hạn 3%
+   chiếu sáng / 5% động lực.
+5. **Panel kho lạnh (M2)**: độ dày = max(tiêu chí dòng nhiệt q ≤ q mục tiêu, tiêu chí đọng sương).
+   Cột ứng dụng của bảng U-value tính lại theo q ≤ 8 W/m², Ta = 35°C.
+6. **Pipe Sizing (M3)**: bỏ các loại ống môi chất lạnh (hút/xả/lỏng) — phải chọn theo tổn thất ở M7.
+   Dự án cũ đang chọn các loại này được tự đưa về "Water/Glycol".
+
+Kiểm thử mới: `tests/design-logic.spec.js`.
+
 ### 2026-11-20 — bản cache `Toolkits-v3`
 
 Bỏ hoàn toàn việc gọi CDN khi chạy (theo quy tắc "thư viện nhúng, không gọi CDN"):
